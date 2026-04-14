@@ -6,7 +6,7 @@ pages_build_output_dir = "dist"
 # Then replace the id values below
 [[kv_namespaces]]
 binding = "BLOG_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_NAMESPACE_ID"
+id = "6ce89af498cc41908b4c38ed42e1729b"
+preview_id = "73ed8d03db5347b583f96a10c8ffec94"
 
 # Set admin password with: wrangler secret put ADMIN_PASSWORD
