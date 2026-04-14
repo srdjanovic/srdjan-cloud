@@ -1,0 +1,70 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer__inner container">
+    <div class="footer__prompt">
+      <span class="footer__prompt-user">srdan</span><span class="footer__prompt-at">@</span><span class="footer__prompt-host">srdjan.cloud</span><span class="footer__prompt-cursor">█</span>
+    </div>
+    <div class="footer__links">
+      <a href="mailto:misrdan@gmail.com">misrdan@gmail.com</a>
+      <a href="https://www.linkedin.com/in/milutinovicsrdjan/" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+    <p class="footer__copy">© {year} Srđan Milutinović</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 0;
+    margin-top: auto;
+  }
+  .footer__inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .footer__prompt {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+  .footer__prompt-user  { color: var(--green); }
+  .footer__prompt-at    { color: var(--muted); }
+  .footer__prompt-host  { color: var(--accent); }
+  .footer__prompt-cursor {
+    color: var(--green);
+    animation: blink 1.2s step-end infinite;
+  }
+  .footer__links {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.875rem;
+  }
+  .footer__links a {
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+  .footer__links a:hover {
+    color: var(--accent);
+    opacity: 1;
+  }
+  .footer__copy {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0;
+    width: 100%;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  @media (max-width: 520px) {
+    .footer__inner { flex-direction: column; align-items: flex-start; }
+  }
+</style>

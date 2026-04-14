@@ -1,0 +1,192 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout title="Post" description="Blog post on srdjan.cloud">
+  <Nav />
+
+  <main class="post-main">
+    <div class="container">
+      <div id="post-loading" class="loading-state" aria-live="polite">
+        <div class="spinner"></div>
+        <span>Loading post…</span>
+      </div>
+
+      <div id="post-error" class="error-state" hidden>
+        <p>Post not found. <a href="/blog">← Back to blog</a></p>
+      </div>
+
+      <article id="post-article" hidden>
+        <a href="/blog" class="back-link">← All posts</a>
+        <header class="post-header">
+          <p id="post-date" class="post-date"></p>
+          <h1 id="post-title" class="post-title"></h1>
+          <p id="post-excerpt" class="post-excerpt"></p>
+        </header>
+        <div id="post-body" class="post-body prose"></div>
+      </article>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<!-- marked.js for Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+
+<style>
+  .post-main { padding-top: var(--nav-h); padding-bottom: 5rem; }
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    padding: 2rem 0;
+  }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,212,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  .error-state { color: var(--muted); padding: 4rem 0; }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 2rem 0 2.5rem;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent); opacity: 1; }
+
+  .post-header {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+  .post-date {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .post-title {
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .post-excerpt {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  .post-body {
+    max-width: 68ch;
+  }
+  .post-body :global(h1),
+  .post-body :global(h2),
+  .post-body :global(h3) {
+    font-family: var(--font-mono);
+    margin: 2.5rem 0 1rem;
+    color: var(--accent);
+  }
+  .post-body :global(h1) { font-size: 1.6rem; }
+  .post-body :global(h2) { font-size: 1.3rem; }
+  .post-body :global(h3) { font-size: 1.05rem; color: var(--text); }
+  .post-body :global(p)  { margin-bottom: 1.25rem; }
+  .post-body :global(ul),
+  .post-body :global(ol) { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+  .post-body :global(li) { margin-bottom: 0.4rem; }
+  .post-body :global(blockquote) {
+    border-left: 3px solid var(--accent);
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    color: var(--muted);
+    margin: 1.5rem 0;
+    font-style: italic;
+  }
+  .post-body :global(pre) {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin-bottom: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .post-body :global(code) { font-family: var(--font-mono); }
+  .post-body :global(hr) {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  (async function () {
+    const loading  = document.getElementById('post-loading')!;
+    const errorEl  = document.getElementById('post-error')!;
+    const article  = document.getElementById('post-article')!;
+
+    const params = new URLSearchParams(window.location.search);
+    const slug   = params.get('slug');
+
+    if (!slug) {
+      loading.hidden = true;
+      (errorEl as HTMLElement).hidden = false;
+      return;
+    }
+
+    function formatDate(iso: string): string {
+      try {
+        return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch { return iso; }
+    }
+
+    interface Post {
+      slug: string; title: string; date: string;
+      excerpt: string; content: string; status: string;
+    }
+
+    try {
+      const res = await fetch('/api/posts/' + encodeURIComponent(slug));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const post: Post = await res.json();
+
+      document.title = post.title + ' — srdjan.cloud';
+
+      const dateEl    = document.getElementById('post-date')!;
+      const titleEl   = document.getElementById('post-title')!;
+      const excerptEl = document.getElementById('post-excerpt')!;
+      const bodyEl    = document.getElementById('post-body')!;
+
+      dateEl.textContent    = formatDate(post.date);
+      titleEl.textContent   = post.title;
+      excerptEl.textContent = post.excerpt;
+
+      // @ts-ignore — marked loaded via CDN
+      bodyEl.innerHTML = window.marked ? window.marked.parse(post.content) : post.content;
+
+      loading.hidden  = true;
+      (article as HTMLElement).hidden = false;
+
+    } catch (err) {
+      loading.hidden  = true;
+      (errorEl as HTMLElement).hidden = false;
+      console.error('Failed to load post:', err);
+    }
+  })();
+</script>

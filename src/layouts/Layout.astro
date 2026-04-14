@@ -1,0 +1,65 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description = 'Senior Technical Operations Engineer — Kubernetes, cloud infrastructure, observability, and delivery at scale.',
+  image = '/og.png',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="generator" content={Astro.generator} />
+
+  <title>{title === 'Home' ? 'Srđan Milutinović — srdjan.cloud' : `${title} — srdjan.cloud`}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={image} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style is:global>
+    /* nav offset for anchor links */
+    :target { scroll-margin-top: calc(var(--nav-h) + 1.5rem); }
+  </style>
+</head>
+<body>
+  <slot name="pre-nav" />
+
+  <slot />
+
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('site-nav');
+    if (nav) {
+      const toggle = () => nav.classList.toggle('scrolled', window.scrollY > 20);
+      window.addEventListener('scroll', toggle, { passive: true });
+      toggle();
+    }
+  </script>
+</body>
+</html>

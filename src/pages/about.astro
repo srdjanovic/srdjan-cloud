@@ -1,0 +1,300 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout
+  title="About"
+  description="From QA and technical support to running cloud infrastructure at 195k+ daily requests — the story of Srđan Milutinović."
+>
+  <Nav />
+
+  <main class="about-main">
+    <div class="container">
+      <header class="page-header">
+        <p class="page-header__tag">// about</p>
+        <h1 class="page-header__title">The longer story.</h1>
+        <p class="page-header__lead">
+          From support tickets to 65,000+ requests per second per product — a career built on making complex systems reliable.
+        </p>
+      </header>
+
+      <div class="about-layout">
+        <article class="prose about-prose">
+
+          <p>
+            There's a particular kind of engineering perspective that comes from spending years on the other side of the fire alarm — the person who takes the call when something breaks at scale, who writes the postmortem and then goes back in to fix the architecture that made the failure possible. That's the lens Srđan Milutinović brings to every system he works on.
+          </p>
+
+          <h2>The Early Years</h2>
+
+          <p>
+            The career started where a lot of technical careers do: QA and support. Positions at MicroFocus, NCR, and Microsoft introduced the fundamentals that no architecture diagram teaches — how enterprise systems fail at the edges, how users experience failures that developers never anticipated, and how the gap between "working in dev" and "working in production" can be catastrophic if you don't take it seriously.
+          </p>
+
+          <p>
+            The Microsoft stint involved SAML-based enterprise authentication integrations and Hadoop analytics work — two areas that, combined, built a strong intuition for identity systems, large-scale data pipelines, and the kind of enterprise complexity that makes or breaks B2B products. The NCR years added enterprise QA rigour to the mix. It was unglamorous work by engineering standards, but it was formative.
+          </p>
+
+          <h2>Fintech Scale</h2>
+
+          <p>
+            The real step-change came at <strong>Wirecard AG</strong>. Enterprise merchant integrations in payments mean navigating a world where a misconfigured API mapping can block millions in transactions, where fraud detection SQL runs against hundreds of millions of rows, and where the compliance and technical requirements exist in constant tension with delivery speed. Srđan owned merchant integration projects end-to-end — from technical scoping through implementation and post-launch support — and built a fluency in payment rails that most engineers never need.
+          </p>
+
+          <p>
+            When Wirecard collapsed in 2020, the move to <strong>PPRO Group</strong> was a natural continuation: another fintech, different architecture. PPRO runs global payment infrastructure on AWS ECS, and the role there added two important dimensions. First, real AWS infrastructure operations at scale — ECS task definitions, IAM, networking, the full stack. Second, a team lead element: not just delivering technically, but coordinating across a team, managing expectations, and owning the human side of shipping fast in a high-pressure environment.
+          </p>
+
+          <p>
+            A stint at <strong>Tamedia / TX Services</strong> (now TX Group) was a deliberate context switch. Migrating paywall infrastructure for a major Swiss media company and managing an ELK stack for editorial analytics is a completely different operational environment from fintech — different compliance landscape, different failure modes, different stakeholders. It broadened what "operations" could mean.
+          </p>
+
+          <h2>Infrastructure at IONOS Cloud</h2>
+
+          <p>
+            Since November 2022, Srđan has been a <strong>Senior Technical Operations Engineer at IONOS Cloud</strong>, responsible for three core cloud products: <strong>Cloud DNS</strong>, <strong>CDN</strong>, and <strong>Domains</strong>. These aren't small products.
+          </p>
+
+          <div class="stat-block">
+            <div class="stat">
+              <div class="stat__number">65k+</div>
+              <div class="stat__label">daily requests per product</div>
+            </div>
+            <div class="stat">
+              <div class="stat__number">×3</div>
+              <div class="stat__label">products in scope</div>
+            </div>
+            <div class="stat">
+              <div class="stat__number">4</div>
+              <div class="stat__label">managed DB clusters</div>
+            </div>
+            <div class="stat">
+              <div class="stat__number">99.99%</div>
+              <div class="stat__label">HA target achieved</div>
+            </div>
+          </div>
+
+          <p>
+            The role at IONOS covers more ground than most "ops" titles suggest. On any given week, that might mean reviewing a Helm chart deployment for a DNS resolver update, running a ChaosMesh experiment to validate failover behaviour, driving a BSI C5 evidence audit, or leading a cross-functional incident debrief. It's a role that spans product delivery, project coordination, technical architecture, compliance, and people — without being neatly constrained by any single discipline.
+          </p>
+
+          <h2>BSI C5 Compliance</h2>
+
+          <p>
+            One of the threads running through the IONOS work is <strong>BSI C5</strong> — Germany's federal Cloud Computing Compliance Criteria Catalogue. Owning C5 compliance for live cloud products isn't an audit exercise; it's an operational discipline. It means mapping every control domain (availability, change management, cryptography, incident response, and more) to real evidence from real systems, identifying gaps before auditors do, and working with product and engineering teams to close them.
+          </p>
+
+          <p>
+            Most compliance work at this level surfaces architectural questions that weren't obvious before the mapping exercise started. C5 has directly influenced infrastructure decisions at IONOS — particularly around access controls, change management pipelines, and incident documentation. It's one of the more underrated ways that compliance and engineering quality intersect.
+          </p>
+
+          <h2>Chaos Engineering</h2>
+
+          <p>
+            In 2023, Srđan designed and implemented a structured <strong>chaos engineering programme</strong> using <strong>ChaosMesh</strong> across 100+ Kubernetes workloads. The goal wasn't to break things for sport — it was to answer a specific question: <em>what do we actually know about how these systems fail, versus what do we assume?</em>
+          </p>
+
+          <p>
+            The programme ran pod failure, network partition, CPU/memory stress, and DNS failure experiments across production-equivalent environments. The outcomes were significant: multiple failure paths that monitoring hadn't caught, runbook gaps that postmortems hadn't surfaced, and a measurable improvement in operator confidence during real incidents. The 99.99% HA target for the covered workloads is now backed by empirical failure data, not just architectural intent.
+          </p>
+
+          <h2>Observability Stack</h2>
+
+          <p>
+            The observability stack at IONOS Cloud — <strong>VictoriaMetrics</strong> for metrics, <strong>Loki</strong> for logs, <strong>Grafana</strong> for dashboards — wasn't inherited; it was built. Designing an observability platform for cloud infrastructure products means thinking about cardinality, retention, alerting signal-to-noise, and the on-call experience simultaneously. The goal is dashboards that tell a story during an incident, not dashboards that display data.
+          </p>
+
+          <p>
+            Alongside the tooling, Srđan has contributed to the team's observability culture: what it means to instrument a service well, how to write runbooks that reduce MTTR, and how to run postmortems that produce structural improvements rather than blame.
+          </p>
+
+          <h2>CKA Certification</h2>
+
+          <p>
+            In April 2024, Srđan passed the <strong>Certified Kubernetes Administrator (CKA)</strong> exam — a hands-on certification that reflects the depth of Kubernetes work across his career. The CKA matters not because it's a badge but because it validates operational Kubernetes knowledge at the level where most cloud infrastructure teams actually work.
+          </p>
+
+          <h2>What's Next</h2>
+
+          <p>
+            Srđan is open to senior roles in <strong>Technical Operations</strong>, <strong>Platform Engineering</strong>, and <strong>Technical Product or Delivery</strong> — particularly at companies where infrastructure is a competitive advantage and where the boundary between "ops" and "product" is treated as a feature, not a limitation.
+          </p>
+
+          <p>
+            If you're building infrastructure that others depend on, and you want someone who's been on both sides of the reliability equation — reach out.
+          </p>
+
+        </article>
+
+        <aside class="about-sidebar">
+          <div class="card sidebar-card">
+            <h3>Stack</h3>
+            <ul class="tag-list">
+              {[
+                'Kubernetes', 'Helm', 'ArgoCD', 'Terraform',
+                'VictoriaMetrics', 'Loki', 'Grafana', 'ChaosMesh',
+                'GitOps', 'AWS ECS', 'DNS / CDN', 'DBaaS',
+                'BSI C5', 'Go', 'Bash / Python',
+              ].map(tag => <li class="tag">{tag}</li>)}
+            </ul>
+          </div>
+
+          <div class="card sidebar-card">
+            <h3>Certifications</h3>
+            <div class="cert">
+              <span class="cert__icon">✦</span>
+              <div>
+                <p class="cert__name">CKA</p>
+                <p class="cert__sub">Certified Kubernetes Administrator</p>
+                <p class="cert__sub">April 2024</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card sidebar-card">
+            <h3>Languages</h3>
+            <div class="lang-list">
+              <div class="lang">
+                <span>Croatian / Serbian</span>
+                <span class="lang__level">Native</span>
+              </div>
+              <div class="lang">
+                <span>English</span>
+                <span class="lang__level">C1</span>
+              </div>
+              <div class="lang">
+                <span>German</span>
+                <span class="lang__level">B1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card sidebar-card">
+            <h3>Location</h3>
+            <p class="sidebar-location">Karlsruhe, Germany<br /><span class="muted">Open to remote · on-site DE</span></p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .about-main { padding-top: var(--nav-h); }
+
+  .about-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 4rem;
+    align-items: start;
+    padding-bottom: 5rem;
+  }
+
+  .about-prose {
+    max-width: 100%;
+  }
+
+  /* Sidebar */
+  .about-sidebar {
+    position: sticky;
+    top: calc(var(--nav-h) + 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sidebar-card {
+    padding: 1.25rem 1.4rem;
+  }
+
+  .sidebar-card h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.9rem;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: rgba(0,212,255,0.07);
+    border: 1px solid rgba(0,212,255,0.18);
+    color: var(--accent);
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+  }
+
+  .cert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .cert__icon {
+    color: var(--accent);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .cert__name {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.1rem;
+  }
+  .cert__sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .lang-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .lang {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+  .lang__level {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--green);
+    background: rgba(57,255,20,0.08);
+    border: 1px solid rgba(57,255,20,0.2);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .sidebar-location {
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .muted { color: var(--muted); font-size: 0.8rem; }
+
+  @media (max-width: 800px) {
+    .about-layout {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    .about-sidebar {
+      position: static;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+</style>

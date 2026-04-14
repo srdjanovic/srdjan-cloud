@@ -1,0 +1,296 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Home" description="Srđan Milutinović — Infrastructure at scale. Delivery that ships. Everything in between.">
+  <!-- Particle canvas sits behind everything -->
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+  <Nav />
+
+  <main class="hero">
+    <div class="hero__content">
+      <p class="hero__tag">// senior technical operations engineer</p>
+      <h1 class="hero__name">Srđan<br />Milutinović</h1>
+      <p class="hero__subtitle">
+        <span id="typewriter"></span><span class="hero__cursor">█</span>
+      </p>
+      <p class="hero__location">
+        <span class="hero__dot"></span>Karlsruhe, Germany · IONOS Cloud
+      </p>
+      <div class="hero__cta">
+        <a href="/about" class="btn btn--primary">About me</a>
+        <a href="/blog" class="btn">Read the blog</a>
+      </div>
+    </div>
+
+    <div class="hero__scroll" aria-hidden="true">
+      <span>scroll</span>
+      <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
+        <rect x="0.5" y="0.5" width="11" height="19" rx="5.5" stroke="currentColor" stroke-opacity="0.4"/>
+        <rect class="scroll-dot" x="4" y="3" width="4" height="4" rx="2" fill="currentColor" opacity="0.6"/>
+      </svg>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  #particle-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: calc(var(--nav-h) + 2rem) 1.5rem 5rem;
+  }
+
+  .hero__content {
+    max-width: 700px;
+  }
+
+  .hero__tag {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero__name {
+    font-size: clamp(3rem, 10vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--text) 0%, rgba(0, 212, 255, 0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero__subtitle {
+    font-family: var(--font-mono);
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: var(--accent);
+    margin-bottom: 1rem;
+    min-height: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1em;
+  }
+
+  .hero__cursor {
+    color: var(--green);
+    animation: blink 1s step-end infinite;
+    opacity: 0;
+  }
+  .hero__cursor.visible { opacity: 1; }
+
+  .hero__location {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .hero__dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .hero__cta {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero__scroll {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    animation: fadeIn 1s 3s both;
+  }
+
+  .scroll-dot {
+    animation: scrollBounce 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%       { transform: scale(1.4); opacity: 0.7; }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes scrollBounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(6px); }
+  }
+
+  /* Ensure nav and footer sit above canvas */
+  :global(#site-nav), :global(.footer) { position: relative; z-index: 2; }
+</style>
+
+<script>
+  // ── Particle Canvas ────────────────────────────────────────────
+  (function () {
+    const canvas = document.getElementById('particle-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let W = 0, H = 0;
+    const PARTICLE_DENSITY = 14000; // px² per particle
+    const CONNECTION_DIST  = 130;
+    const MAX_SPEED        = 0.35;
+
+    interface Particle {
+      x: number; y: number;
+      vx: number; vy: number;
+      r: number; phase: number;
+    }
+
+    let particles: Particle[] = [];
+    let mouse = { x: -9999, y: -9999 };
+    let raf: number;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      init();
+    }
+
+    function init() {
+      const count = Math.max(30, Math.floor((W * H) / PARTICLE_DENSITY));
+      particles = Array.from({ length: count }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * MAX_SPEED * 2,
+        vy: (Math.random() - 0.5) * MAX_SPEED * 2,
+        r: Math.random() * 1.5 + 0.75,
+        phase: Math.random() * Math.PI * 2,
+      }));
+    }
+
+    function clampSpeed(p: Particle) {
+      const spd = Math.hypot(p.vx, p.vy);
+      if (spd > MAX_SPEED) { p.vx = p.vx / spd * MAX_SPEED; p.vy = p.vy / spd * MAX_SPEED; }
+    }
+
+    function draw() {
+      ctx!.clearRect(0, 0, W, H);
+
+      for (const p of particles) {
+        // mouse attraction
+        const mdx = mouse.x - p.x, mdy = mouse.y - p.y;
+        const mdist = Math.hypot(mdx, mdy);
+        if (mdist < 180 && mdist > 0) {
+          p.vx += (mdx / mdist) * 0.015;
+          p.vy += (mdy / mdist) * 0.015;
+        }
+
+        p.phase += 0.018;
+        p.x += p.vx; p.y += p.vy;
+        clampSpeed(p);
+
+        // wrap
+        if (p.x < -5)  p.x = W + 5;
+        if (p.x > W+5) p.x = -5;
+        if (p.y < -5)  p.y = H + 5;
+        if (p.y > H+5) p.y = -5;
+
+        const alpha = 0.35 + 0.25 * Math.sin(p.phase);
+        const pr    = p.r * (0.85 + 0.15 * Math.sin(p.phase * 0.7));
+
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, pr, 0, Math.PI * 2);
+        ctx!.fillStyle = 'rgba(0,212,255,' + alpha.toFixed(2) + ')';
+        ctx!.fill();
+      }
+
+      // connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i], b = particles[j];
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (d < CONNECTION_DIST) {
+            const alpha = ((1 - d / CONNECTION_DIST) * 0.18).toFixed(3);
+            ctx!.beginPath();
+            ctx!.moveTo(a.x, a.y);
+            ctx!.lineTo(b.x, b.y);
+            ctx!.strokeStyle = 'rgba(0,212,255,' + alpha + ')';
+            ctx!.lineWidth = 0.6;
+            ctx!.stroke();
+          }
+        }
+      }
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+    window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+    resize();
+    draw();
+  })();
+
+  // ── Typewriter ─────────────────────────────────────────────────
+  (function () {
+    const el     = document.getElementById('typewriter') as HTMLElement;
+    const cursor = document.querySelector('.hero__cursor') as HTMLElement;
+    if (!el || !cursor) return;
+
+    const text = 'Infrastructure at scale. Delivery that ships. Everything in between.';
+    let i = 0;
+    cursor.classList.add('visible');
+
+    function type() {
+      if (i <= text.length) {
+        el.textContent = text.slice(0, i);
+        i++;
+        setTimeout(type, i < 5 ? 80 : 45 + Math.random() * 30);
+      }
+    }
+
+    setTimeout(type, 700);
+  })();
+</script>

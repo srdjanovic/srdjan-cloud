@@ -1,0 +1,170 @@
+---
+const { pathname } = Astro.url;
+
+const links = [
+  { href: '/',         label: 'home'     },
+  { href: '/about',    label: 'about'    },
+  { href: '/blog',     label: 'blog'     },
+  { href: '/projects', label: 'projects' },
+  { href: '/contact',  label: 'contact'  },
+];
+
+function isActive(href: string): boolean {
+  if (href === '/') return pathname === '/';
+  return pathname.startsWith(href);
+}
+---
+
+<header id="site-nav" class="nav">
+  <div class="nav__inner">
+    <a href="/" class="nav__logo" aria-label="srdjan.cloud home">
+      <span class="nav__logo-name">srdjan</span><span class="nav__logo-dot">.</span><span class="nav__logo-tld">cloud</span>
+    </a>
+
+    <button class="nav__hamburger" id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav__links" id="nav-links" role="navigation">
+      {links.map(link => (
+        <a
+          href={link.href}
+          class={`nav__link${isActive(link.href) ? ' nav__link--active' : ''}`}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    height: var(--nav-h);
+    transition: background 0.3s, border-color 0.3s;
+    border-bottom: 1px solid transparent;
+  }
+  .nav.scrolled {
+    background: rgba(8, 13, 23, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom-color: var(--border);
+  }
+
+  .nav__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .nav__logo {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .nav__logo-name { color: var(--text); }
+  .nav__logo-dot  { color: var(--accent); }
+  .nav__logo-tld  { color: var(--accent); }
+  .nav__logo:hover { opacity: 1; }
+  .nav__logo:hover .nav__logo-name { color: var(--accent); }
+
+  .nav__links {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  .nav__link {
+    font-family: var(--font-mono);
+    font-size: 0.825rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+  }
+  .nav__link:hover {
+    color: var(--text);
+    background: var(--surface);
+    opacity: 1;
+  }
+  .nav__link--active {
+    color: var(--accent);
+  }
+
+  .nav__hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+  }
+  .nav__hamburger span {
+    display: block;
+    height: 1.5px;
+    background: var(--text);
+    transition: transform 0.2s, opacity 0.2s;
+    border-radius: 1px;
+  }
+  .nav__hamburger[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(6.5px) rotate(45deg);
+  }
+  .nav__hamburger[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+  }
+  .nav__hamburger[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-6.5px) rotate(-45deg);
+  }
+
+  @media (max-width: 620px) {
+    .nav__hamburger { display: flex; }
+    .nav__links {
+      position: absolute;
+      top: var(--nav-h);
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 1rem 1.5rem 1.5rem;
+      background: rgba(8, 13, 23, 0.97);
+      border-bottom: 1px solid var(--border);
+      display: none;
+      gap: 0.25rem;
+    }
+    .nav__links.open { display: flex; }
+    .nav__link { padding: 0.6rem 0.75rem; font-size: 0.9rem; }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const links  = document.getElementById('nav-links');
+  toggle?.addEventListener('click', () => {
+    const open = links?.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  // Close on link click (mobile)
+  links?.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      links.classList.remove('open');
+      toggle?.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>

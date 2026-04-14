@@ -1,0 +1,166 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout
+  title="Projects"
+  description="Personal and side projects by Srđan Milutinović."
+>
+  <Nav />
+
+  <main class="projects-main">
+    <div class="container">
+      <header class="page-header">
+        <p class="page-header__tag">// projects</p>
+        <h1 class="page-header__title">Projects.</h1>
+        <p class="page-header__lead">
+          Side projects, experiments, and things built outside of working hours.
+        </p>
+      </header>
+
+      <div class="projects-grid">
+        <!-- Bubi Planner — coming soon -->
+        <div class="project-card card coming-soon">
+          <div class="project-card__badge">Coming Soon</div>
+          <div class="project-card__icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8"  y1="2" x2="8"  y2="6"/>
+              <line x1="3"  y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <h2 class="project-card__title">Bubi Planner</h2>
+          <p class="project-card__desc">Details coming soon.</p>
+          <div class="project-card__footer">
+            <span class="project-tag">TBA</span>
+          </div>
+        </div>
+
+        <!-- Placeholder: more to come -->
+        <div class="project-card card placeholder">
+          <div class="project-card__icon" aria-hidden="true">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <p class="placeholder-text">More projects coming when they're ready.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .projects-main { padding-top: var(--nav-h); padding-bottom: 5rem; }
+
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .project-card {
+    padding: 2rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 220px;
+  }
+
+  .project-card__badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+  }
+
+  .project-card__icon {
+    color: var(--accent);
+    opacity: 0.6;
+    margin-bottom: 0.25rem;
+  }
+
+  .coming-soon .project-card__icon {
+    filter: blur(0.5px);
+    opacity: 0.4;
+  }
+
+  .project-card__title {
+    font-size: 1.2rem;
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+
+  .coming-soon .project-card__title {
+    filter: blur(3px);
+    user-select: none;
+    color: var(--muted);
+  }
+
+  .project-card__desc {
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .coming-soon .project-card__desc {
+    filter: blur(2px);
+    user-select: none;
+  }
+
+  .project-card__footer {
+    margin-top: auto;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .project-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.15);
+    color: var(--muted);
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+  }
+
+  .placeholder {
+    border-style: dashed;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: transparent;
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+  }
+  .placeholder:hover {
+    border-color: var(--border);
+    box-shadow: none;
+    transform: none;
+  }
+  .placeholder .project-card__icon { color: var(--muted); }
+  .placeholder-text {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin: 0;
+  }
+</style>

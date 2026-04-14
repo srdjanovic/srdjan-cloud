@@ -1,0 +1,195 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout
+  title="Blog"
+  description="Writing on cloud operations, Kubernetes, BSI C5 compliance, chaos engineering, and observability at scale."
+>
+  <Nav />
+
+  <main class="blog-main">
+    <div class="container">
+      <header class="page-header">
+        <p class="page-header__tag">// blog</p>
+        <h1 class="page-header__title">Writing.</h1>
+        <p class="page-header__lead">
+          Notes on cloud infrastructure, reliability, and the operational reality behind the architecture diagrams.
+        </p>
+      </header>
+
+      <div id="posts-loading" class="loading-state" aria-live="polite">
+        <div class="spinner"></div>
+        <span>Loading posts…</span>
+      </div>
+
+      <div id="posts-error" class="error-state" hidden>
+        <p>Could not load posts. Please try again later.</p>
+      </div>
+
+      <div id="posts-list" class="posts-grid" aria-label="Blog posts">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .blog-main { padding-top: var(--nav-h); padding-bottom: 5rem; }
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    padding: 2rem 0;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(0,212,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .error-state {
+    color: var(--muted);
+    padding: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .posts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Post card styles (also used by JS-injected HTML) */
+  :global(.post-card) {
+    display: block;
+    padding: 1.75rem 2rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
+  }
+  :global(.post-card:hover) { transform: translateY(-2px); opacity: 1; }
+
+  :global(.post-card__meta) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+  }
+  :global(.post-card__date) {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  :global(.post-card__tag) {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--green);
+    background: rgba(57,255,20,0.07);
+    border: 1px solid rgba(57,255,20,0.2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  :global(.post-card__title) {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    transition: color 0.2s;
+  }
+  :global(.post-card:hover .post-card__title) { color: var(--accent); }
+  :global(.post-card__excerpt) {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.65;
+    margin: 0;
+  }
+  :global(.post-card__arrow) {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  :global(.post-card:hover .post-card__arrow) { opacity: 1; transform: translateX(0); }
+</style>
+
+<script>
+  (async function () {
+    const loading  = document.getElementById('posts-loading')!;
+    const errorEl  = document.getElementById('posts-error')!;
+    const listEl   = document.getElementById('posts-list')!;
+
+    function formatDate(iso: string): string {
+      try {
+        return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch { return iso; }
+    }
+
+    function escHtml(s: string): string {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    interface PostMeta {
+      slug: string;
+      title: string;
+      date: string;
+      excerpt: string;
+      status: string;
+    }
+
+    try {
+      const res = await fetch('/api/posts');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const posts: PostMeta[] = await res.json();
+
+      loading.hidden = true;
+
+      if (posts.length === 0) {
+        listEl.innerHTML = '<p style="color:var(--muted);padding:2rem 0">No posts published yet.</p>';
+        return;
+      }
+
+      listEl.innerHTML = posts.map(p =>
+        '<a href="/blog/post/?slug=' + encodeURIComponent(p.slug) + '" class="card post-card">' +
+          '<div class="post-card__meta">' +
+            '<span class="post-card__date">' + escHtml(formatDate(p.date)) + '</span>' +
+            '<span class="post-card__tag">post</span>' +
+          '</div>' +
+          '<h2 class="post-card__title">' + escHtml(p.title) + '</h2>' +
+          '<p class="post-card__excerpt">' + escHtml(p.excerpt) + '</p>' +
+          '<span class="post-card__arrow">Read more →</span>' +
+        '</a>'
+      ).join('');
+
+    } catch (err) {
+      loading.hidden = true;
+      (errorEl as HTMLElement).hidden = false;
+      console.error('Failed to load posts:', err);
+    }
+  })();
+</script>
