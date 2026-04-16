@@ -6,7 +6,7 @@ import Footer from '../components/Footer.astro';
 
 <Layout
   title="About"
-  description="From QA and technical support to running cloud infrastructure at 195k+ daily requests — the story of Srđan Milutinović."
+  description="From QA and technical support to running cloud infrastructure at scale — a career built in the gap between 'working in dev' and 'working in production'."
 >
   <Nav />
 
@@ -16,7 +16,7 @@ import Footer from '../components/Footer.astro';
         <p class="page-header__tag">// about</p>
         <h1 class="page-header__title">The longer story.</h1>
         <p class="page-header__lead">
-          From support tickets to 65,000+ requests per second per product — a career built on making complex systems reliable.
+          Belgrade to Galway to Germany — picking up the work nobody else had claimed ownership of, and learning a lot in the process.
         </p>
       </header>
 
@@ -24,37 +24,37 @@ import Footer from '../components/Footer.astro';
         <article class="prose about-prose">
 
           <p>
-            There's a particular kind of engineering perspective that comes from spending years on the other side of the fire alarm — the person who takes the call when something breaks at scale, who writes the postmortem and then goes back in to fix the architecture that made the failure possible. That's the lens Srđan Milutinović brings to every system he works on.
+            The thread running through my career isn't a plan. It's closer to: I noticed something that needed doing, nobody had claimed ownership of it, and I did it. This is not a particularly efficient way to build a linear CV, and my CV reflects that honestly. But it turns out to be a very good way to learn how things actually work — as opposed to how they're supposed to work — and to end up with a range of experience that's genuinely hard to get any other way.
           </p>
 
-          <h2>The Early Years</h2>
+          <h2>Belgrade → Galway → Germany</h2>
 
           <p>
-            The career started where a lot of technical careers do: QA and support. Positions at MicroFocus, NCR, and Microsoft introduced the fundamentals that no architecture diagram teaches — how enterprise systems fail at the edges, how users experience failures that developers never anticipated, and how the gap between "working in dev" and "working in production" can be catastrophic if you don't take it seriously.
+            I started in QA at <strong>Microsoft's Development Center in Belgrade</strong> — testing OCR for Bing Vision. Less glamorous than it sounds, which is saying something. Then <strong>NCR</strong>: support for Blackberry devices and predictive analytics for ATMs, point-of-sale systems, and whatever else NCR makes that eventually breaks. The work was operational and occasionally tedious, but it built something useful: an intuition for how embedded, semi-autonomous systems fail in ways their designers didn't anticipate.
           </p>
 
           <p>
-            The Microsoft stint involved SAML-based enterprise authentication integrations and Hadoop analytics work — two areas that, combined, built a strong intuition for identity systems, large-scale data pipelines, and the kind of enterprise complexity that makes or breaks B2B products. The NCR years added enterprise QA rigour to the mix. It was unglamorous work by engineering standards, but it was formative.
+            Then I moved to Galway, Ireland. <strong>MicroFocus</strong> had an IAM product that needed technical support and integration engineering — the kind of role where "integration" means sitting between a customer's enterprise system and a product mostly designed with a different enterprise system in mind, and making them agree. SAML in practice is a negotiation, not a standard. That's where I learned that authentication is never just authentication, and that the gap between "compatible" and "actually works" is where most of the work lives.
           </p>
 
           <h2>Fintech Scale</h2>
 
           <p>
-            The real step-change came at <strong>Wirecard AG</strong>. Enterprise merchant integrations in payments mean navigating a world where a misconfigured API mapping can block millions in transactions, where fraud detection SQL runs against hundreds of millions of rows, and where the compliance and technical requirements exist in constant tension with delivery speed. Srđan owned merchant integration projects end-to-end — from technical scoping through implementation and post-launch support — and built a fluency in payment rails that most engineers never need.
+            From Galway to Germany. <strong>Wirecard AG</strong> needed someone for enterprise merchant integrations — navigating a world where a misconfigured API mapping could block millions in transactions, fraud detection SQL ran against hundreds of millions of rows, and compliance requirements existed in constant tension with delivery speed. I owned those projects end-to-end — scoping through implementation through post-launch support — and built a fluency in payment rails that I genuinely hope to never need again.
           </p>
 
           <p>
-            When Wirecard collapsed in 2020, the move to <strong>PPRO Group</strong> was a natural continuation: another fintech, different architecture. PPRO runs global payment infrastructure on AWS ECS, and the role there added two important dimensions. First, real AWS infrastructure operations at scale — ECS task definitions, IAM, networking, the full stack. Second, a team lead element: not just delivering technically, but coordinating across a team, managing expectations, and owning the human side of shipping fast in a high-pressure environment.
+            I left Wirecard in early 2017, well before it collapsed spectacularly in 2020 in what turned out to be one of Europe's largest accounting frauds. The timing was not prescience — I just had a better offer. <strong>PPRO Group</strong>: global payment infrastructure on AWS ECS, a growing team, and for the first time, actual team lead responsibilities. I was Technical Operations Manager there through significant growth — the kind where the architecture you inherited at the start of the year is no longer adequate by the end of it, and the team doubles, and the decisions compound. I stayed until October 2020.
           </p>
 
           <p>
-            A stint at <strong>Tamedia / TX Services</strong> (now TX Group) was a deliberate context switch. Migrating paywall infrastructure for a major Swiss media company and managing an ELK stack for editorial analytics is a completely different operational environment from fintech — different compliance landscape, different failure modes, different stakeholders. It broadened what "operations" could mean.
+            October 2020 is when COVID lockdowns and personal life intersected in a way that reorganised things. I was in Belgrade. Travel stopped. I met my now-wife. I stayed. After PPRO came a stint at <strong>Tamedia / TX Services</strong> (now TX Group) — migrating paywall infrastructure for a major Swiss media company and managing an ELK stack for editorial analytics. Operationally different enough from fintech that it felt like learning the job from scratch. The stakeholders have very different ideas about what "urgent" means in media versus payments. We had a baby. We moved to Karlsruhe.
           </p>
 
           <h2>Infrastructure at IONOS Cloud</h2>
 
           <p>
-            Since November 2022, Srđan has been a <strong>Senior Technical Operations Engineer at IONOS Cloud</strong>, responsible for three core cloud products: <strong>Cloud DNS</strong>, <strong>CDN</strong>, and <strong>Domains</strong>. These aren't small products.
+            Since November 2022, I've been a <strong>Senior Technical Operations Engineer at IONOS Cloud</strong>, responsible for three core cloud products: <strong>Cloud DNS</strong>, <strong>CDN</strong>, and <strong>Domains</strong>. These aren't small products — a number that stops being abstract the first time you push a bad config change to a DNS resolver.
           </p>
 
           <div class="stat-block">
@@ -77,53 +77,55 @@ import Footer from '../components/Footer.astro';
           </div>
 
           <p>
-            The role at IONOS covers more ground than most "ops" titles suggest. On any given week, that might mean reviewing a Helm chart deployment for a DNS resolver update, running a ChaosMesh experiment to validate failover behaviour, driving a BSI C5 evidence audit, or leading a cross-functional incident debrief. It's a role that spans product delivery, project coordination, technical architecture, compliance, and people — without being neatly constrained by any single discipline.
+            The role covers more ground than most "ops" titles suggest. On any given week that might mean reviewing a Helm chart for a DNS resolver update, running a ChaosMesh experiment to validate failover behaviour, driving a BSI C5 evidence audit, or facilitating an incident debrief where the postmortem needs to produce a structural fix rather than a blame allocation. It's a role that spans product delivery, project coordination, compliance, and people — without being neatly constrained by any single discipline, which is either its main feature or its main liability depending on your perspective.
           </p>
 
           <h2>BSI C5 Compliance</h2>
 
           <p>
-            One of the threads running through the IONOS work is <strong>BSI C5</strong> — Germany's federal Cloud Computing Compliance Criteria Catalogue. Owning C5 compliance for live cloud products isn't an audit exercise; it's an operational discipline. It means mapping every control domain (availability, change management, cryptography, incident response, and more) to real evidence from real systems, identifying gaps before auditors do, and working with product and engineering teams to close them.
+            <strong>BSI C5</strong> is Germany's Cloud Computing Compliance Criteria Catalogue. On paper, it's a compliance checklist. In practice, owning C5 evidence for live cloud products is an operational discipline that surfaces architectural questions nobody thought to ask before the mapping exercise started.
           </p>
 
           <p>
-            Most compliance work at this level surfaces architectural questions that weren't obvious before the mapping exercise started. C5 has directly influenced infrastructure decisions at IONOS — particularly around access controls, change management pipelines, and incident documentation. It's one of the more underrated ways that compliance and engineering quality intersect.
+            When you work through the criteria and try to produce evidence that "all privileged access is logged and reviewed," you discover quickly which systems have gaps in their audit logging — not because anyone was careless, but because auditable logging was never a requirement before. C5 has directly influenced infrastructure decisions at IONOS: RBAC cleanup, secret rotation procedures, change management documentation for Helm deployments. I'd prefer the forcing function was something other than "auditors are coming," but the outcomes have been good.
           </p>
 
           <h2>Chaos Engineering</h2>
 
           <p>
-            In 2023, Srđan designed and implemented a structured <strong>chaos engineering programme</strong> using <strong>ChaosMesh</strong> across 100+ Kubernetes workloads. The goal wasn't to break things for sport — it was to answer a specific question: <em>what do we actually know about how these systems fail, versus what do we assume?</em>
+            In 2023, I designed a chaos engineering programme using <strong>ChaosMesh</strong> across 100+ Kubernetes workloads. The pitch was "deliberate fault injection." The actual experience was finding out, one experiment at a time, which of our assumptions about system behaviour were correct and which were optimistic.
           </p>
 
           <p>
-            The programme ran pod failure, network partition, CPU/memory stress, and DNS failure experiments across production-equivalent environments. The outcomes were significant: multiple failure paths that monitoring hadn't caught, runbook gaps that postmortems hadn't surfaced, and a measurable improvement in operator confidence during real incidents. The 99.99% HA target for the covered workloads is now backed by empirical failure data, not just architectural intent.
+            Several services retried upstream failures correctly — until sustained network partition conditions exhausted connection pools. A number of PodDisruptionBudgets were configured but didn't match actual availability requirements. Health check settings that looked fine under normal load caused restart loops under CPU stress. None of these were obvious from code review. The 99.99% HA target is now backed by empirical failure data rather than architectural intent. The empirical data took some uncomfortable conversations to collect.
           </p>
 
           <h2>Observability Stack</h2>
 
           <p>
-            The observability stack at IONOS Cloud — <strong>VictoriaMetrics</strong> for metrics, <strong>Loki</strong> for logs, <strong>Grafana</strong> for dashboards — wasn't inherited; it was built. Designing an observability platform for cloud infrastructure products means thinking about cardinality, retention, alerting signal-to-noise, and the on-call experience simultaneously. The goal is dashboards that tell a story during an incident, not dashboards that display data.
-          </p>
-
-          <p>
-            Alongside the tooling, Srđan has contributed to the team's observability culture: what it means to instrument a service well, how to write runbooks that reduce MTTR, and how to run postmortems that produce structural improvements rather than blame.
+            The observability stack — <strong>VictoriaMetrics</strong> for metrics, <strong>Loki</strong> for logs, <strong>Grafana</strong> for dashboards — wasn't inherited; it was built. Building one teaches you things that using one doesn't: cardinality limits bite unexpectedly, alerting signal-to-noise is almost always worse than you initially think, and dashboards that display data are not the same thing as dashboards that tell a story during an incident. The goal was the latter.
           </p>
 
           <h2>CKA Certification</h2>
 
           <p>
-            In April 2024, Srđan passed the <strong>Certified Kubernetes Administrator (CKA)</strong> exam — a hands-on certification that reflects the depth of Kubernetes work across his career. The CKA matters not because it's a badge but because it validates operational Kubernetes knowledge at the level where most cloud infrastructure teams actually work.
+            Passed the <strong>Certified Kubernetes Administrator (CKA)</strong> exam in April 2024. It's a practical, timed exam that tests whether you can actually operate a Kubernetes cluster under pressure, which is a reasonable proxy for the job. The certificate lives in a drawer. The knowledge gets used more regularly.
           </p>
 
           <h2>What's Next</h2>
 
           <p>
-            Srđan is open to senior roles in <strong>Technical Operations</strong>, <strong>Platform Engineering</strong>, and <strong>Technical Product or Delivery</strong> — particularly at companies where infrastructure is a competitive advantage and where the boundary between "ops" and "product" is treated as a feature, not a limitation.
+            I'm open to senior roles in <strong>Technical Operations</strong>, <strong>Platform Engineering</strong>, and <strong>Technical Product or Delivery</strong> — particularly at places where infrastructure is a competitive advantage and where "ops" isn't a team that gets called after the engineers have already decided what to build.
           </p>
 
           <p>
-            If you're building infrastructure that others depend on, and you want someone who's been on both sides of the reliability equation — reach out.
+            If that sounds like where you work, reach out.
+          </p>
+
+          <h2>Outside of work</h2>
+
+          <p>
+            We live in Karlsruhe with a toddler and a Samoyed. The Samoyed is very fluffy and has strong opinions about the acceptable length of a walk. I run, cycle, and follow football with the kind of consistency that doesn't quite justify calling it a hobby but is too regular to call casual. BBQ and pizza are non-negotiable. On beer: Augustiner and Chiemseer, in that order — and I recognise this is a position, not a preference.
           </p>
 
         </article>

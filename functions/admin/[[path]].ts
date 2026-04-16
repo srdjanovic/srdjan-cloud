@@ -3,7 +3,7 @@ import {
   verifySession, createSessionCookie, clearSessionCookie,
 } from '../_shared/auth';
 import {
-  seedIfEmpty, listAll, getPost, upsertPost, deletePost,
+  seedIfEmpty, listAll, getPost, upsertPost, deletePost, reseedDefaults,
 } from '../_shared/kv';
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -461,6 +461,12 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     if (delMatch && method === 'DELETE') {
       const slug = decodeURIComponent(delMatch[1]);
       await deletePost(env, slug);
+      return json({ ok: true });
+    }
+
+    // POST /admin/api/reseed  — reset KV to default posts
+    if (path === '/admin/api/reseed' && method === 'POST') {
+      await reseedDefaults(env);
       return json({ ok: true });
     }
 
