@@ -19,7 +19,7 @@ export async function createSessionCookie(secret: string): Promise<string> {
   const token   = encoded + '.' + sig;
   return (
     COOKIE_NAME + '=' + token +
-    '; HttpOnly; SameSite=Strict; Secure; Path=/; Max-Age=' + SESSION_MS / 1000
+    '; HttpOnly; SameSite=Lax; Secure; Path=/; Max-Age=' + SESSION_MS / 1000
   );
 }
 
