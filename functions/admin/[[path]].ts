@@ -31,7 +31,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <title>Admin — srdjan.cloud</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -154,11 +154,13 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
   <div class="login-box">
     <h1>admin<span>@</span>srdjan.cloud</h1>
     <p>Enter your password to manage blog posts.</p>
-    <div class="field">
-      <label for="pw">Password</label>
-      <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="primary" style="width:100%" onclick="doLogin()">Log in</button>
+    <form onsubmit="event.preventDefault(); doLogin()">
+      <div class="field">
+        <label for="pw">Password</label>
+        <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="primary" style="width:100%">Log in</button>
+    </form>
     <p id="login-err" class="err-msg">Incorrect password.</p>
   </div>
 </div>
@@ -231,7 +233,6 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
 <script>
 var editingSlug = null;
 
-document.getElementById('pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
 document.getElementById('f-pub').addEventListener('change', updateToggleLabel);
 
 function updateToggleLabel(){
@@ -374,7 +375,7 @@ fetch('/admin/api/check',{credentials:'include'}).then(function(r){
     loadPosts();
   }
 });
-<\/script>
+</script>
 </body>
 </html>`;
 
