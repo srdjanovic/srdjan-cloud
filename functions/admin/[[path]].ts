@@ -601,7 +601,7 @@ async function loadAnalytics(){
   var r = await api('/admin/api/analytics?days='+anDays);
   var raw = await r.text(), d = {};
   try { d = JSON.parse(raw); } catch(e) {}
-  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status+': '+raw.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,300))); return; }
+  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status+': '+raw.replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').slice(0,300))); return; }
 
   var t = d.totals || {}, p = d.perf || {};
   var okT = !t.error, okP = !p.error && p.p50ms!=null;
