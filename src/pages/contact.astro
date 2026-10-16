@@ -3,9 +3,9 @@ import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 
-// Set PUBLIC_FORMSPREE_ID (e.g. "xyzabcd") as a build env var / GitHub Actions
-// variable. Without it the form is hidden instead of silently failing.
-const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID;
+// Formspree form ID (public — it's visible in the page HTML anyway).
+// Submissions are delivered to the account that owns the form.
+const formspreeId = 'xjygjdwe';
 ---
 
 <Layout
@@ -84,6 +84,9 @@ const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID;
               method="POST"
               novalidate
             >
+              <input type="hidden" name="_subject" value="New message from srdjan.cloud" />
+              <!-- Honeypot: hidden from people, bots fill it and Formspree drops the submission -->
+              <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none" />
               <div class="form-field">
                 <label for="name">Name</label>
                 <input type="text" id="name" name="name" placeholder="Your name" required />
@@ -257,6 +260,7 @@ const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID;
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!form.reportValidity()) return;
     const data = new FormData(form);
 
     submitText.textContent = 'Sending…';
@@ -276,9 +280,11 @@ const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID;
         (statusEl as HTMLElement).hidden = false;
         form.reset();
       } else {
-        throw new Error('server error');
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.errors?.map((x: { message: string }) => x.message).join(' ') || 'server error');
       }
-    } catch {
+    } catch (err) {
+      console.error('Contact form failed:', err);
       statusEl.textContent = 'Something went wrong. Try emailing me directly at misrdan@gmail.com.';
       statusEl.className   = 'form-status error';
       (statusEl as HTMLElement).hidden = false;
