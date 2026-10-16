@@ -11,3 +11,5 @@ pages_build_output_dir = "dist"
 [vars]
 GITHUB_REPO   = "srdjanovic/srdjan-cloud"
 GITHUB_BRANCH = "main"
+# Not secret; used by the admin Analytics tab (the analytics token can't list accounts)
+CF_ACCOUNT_ID = "ba6f670773333e8b59453ff4676c8e80"

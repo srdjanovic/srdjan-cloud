@@ -738,14 +738,16 @@ function validate(body: any): Post | string {
   return { slug, title: title.trim(), date, excerpt: excerpt.trim(), content, draft };
 }
 
+// Note: never answer 502 — Cloudflare replaces 502 responses with its own
+// "Bad gateway" page, hiding our JSON error. Upstream failures use 500.
 function errorResponse(err: unknown): Response {
   if (err instanceof GitHubError) {
     if (err.status === 404 || err.status === 409) return json({ error: err.message }, err.status);
     console.error(err.message);
     if (err.status === 401 || err.status === 403) {
-      return json({ error: 'GitHub rejected the token — check GITHUB_TOKEN permissions/expiry' }, 502);
+      return json({ error: 'GitHub rejected the token — check GITHUB_TOKEN permissions/expiry' }, 500);
     }
-    return json({ error: 'GitHub API error (' + err.status + ')' }, 502);
+    return json({ error: 'GitHub API error (' + err.status + ')' }, 500);
   }
   console.error(err);
   return json({ error: 'Internal error' }, 500);
@@ -874,7 +876,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       } catch (e) {
         const msg = e instanceof Error ? (e.message || e.name) : String(e);
         console.error('analytics failed', e);
-        return json({ error: 'Analytics failed: ' + (msg || 'unknown error') }, 502);
+        return json({ error: 'Analytics failed: ' + (msg || 'unknown error') }, 500);
       }
     }
 
