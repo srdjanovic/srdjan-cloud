@@ -1,26 +1,39 @@
-export const COOKIE_NAME     = 'admin_session';
-export const SESSION_MS      = 24 * 60 * 60 * 1000; // 24 h
+export const COOKIE_NAME = 'admin_session';
+export const SESSION_MS  = 12 * 60 * 60 * 1000; // 12 h
+
+const enc = new TextEncoder();
+
+function b64url(bytes: Uint8Array): string {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 async function hmac(data: string, secret: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key  = await crypto.subtle.importKey(
+  const key = await crypto.subtle.importKey(
     'raw', enc.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false, ['sign'],
   );
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+  return b64url(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(data))));
+}
+
+// Constant-time comparison: hash both sides so lengths match, then XOR.
+export async function safeEqual(a: string, b: string): Promise<boolean> {
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest('SHA-256', enc.encode(a)),
+    crypto.subtle.digest('SHA-256', enc.encode(b)),
+  ]);
+  const x = new Uint8Array(ha), y = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
 }
 
 export async function createSessionCookie(secret: string): Promise<string> {
-  const payload = JSON.stringify({ exp: Date.now() + SESSION_MS });
-  const encoded = btoa(payload);
-  const sig     = await hmac(encoded, secret);
-  const token   = encoded + '.' + sig;
-  return (
-    COOKIE_NAME + '=' + token +
-    '; HttpOnly; SameSite=Lax; Secure; Path=/; Max-Age=' + SESSION_MS / 1000
-  );
+  const payload = b64url(enc.encode(JSON.stringify({ exp: Date.now() + SESSION_MS })));
+  const token   = payload + '.' + await hmac(payload, secret);
+  return `${COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/admin; Max-Age=${SESSION_MS / 1000}`;
 }
 
 export async function verifySession(request: Request, secret: string): Promise<boolean> {
@@ -28,14 +41,13 @@ export async function verifySession(request: Request, secret: string): Promise<b
   const match  = cookie.match(new RegExp('(?:^|;\\s*)' + COOKIE_NAME + '=([^;]*)'));
   if (!match) return false;
 
-  const [encoded, sig] = match[1].split('.');
-  if (!encoded || !sig) return false;
-
-  const expected = await hmac(encoded, secret);
-  if (expected !== sig) return false;
+  const [payload, sig] = match[1].split('.');
+  if (!payload || !sig) return false;
+  if (!(await safeEqual(await hmac(payload, secret), sig))) return false;
 
   try {
-    const { exp } = JSON.parse(atob(encoded));
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const { exp } = JSON.parse(json);
     return typeof exp === 'number' && exp > Date.now();
   } catch {
     return false;
@@ -43,5 +55,5 @@ export async function verifySession(request: Request, secret: string): Promise<b
 }
 
 export function clearSessionCookie(): string {
-  return COOKIE_NAME + '=; HttpOnly; SameSite=Strict; Secure; Path=/; Max-Age=0';
+  return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Strict; Path=/admin; Max-Age=0`;
 }

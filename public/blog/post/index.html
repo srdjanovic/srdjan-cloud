@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Redirecting…</title>
+<script>
+  var s = new URLSearchParams(location.search).get('slug');
+  location.replace(s && /^[a-z0-9-]+$/.test(s) ? '/blog/' + s + '/' : '/blog/');
+</script>
+<a href="/blog/">Go to blog</a>

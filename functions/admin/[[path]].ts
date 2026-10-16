@@ -1,10 +1,10 @@
 import type { Env, Post } from '../_shared/types';
 import {
-  verifySession, createSessionCookie, clearSessionCookie,
+  verifySession, createSessionCookie, clearSessionCookie, safeEqual,
 } from '../_shared/auth';
 import {
-  seedIfEmpty, listAll, getPost, upsertPost, deletePost, reseedDefaults,
-} from '../_shared/kv';
+  listPosts, getPost, savePost, removePost, GitHubError,
+} from '../_shared/github';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -17,7 +17,13 @@ function json(data: unknown, status = 200, extra: Record<string, string> = {}): 
 
 function html(body: string): Response {
   return new Response(body, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    headers: {
+      'Content-Type':    'text/html; charset=utf-8',
+      'Cache-Control':   'no-store',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'same-origin',
+      'X-Robots-Tag':    'noindex',
+    },
   });
 }
 
@@ -31,7 +37,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <title>Admin — srdjan.cloud</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -138,6 +145,7 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
 /* ─ Alerts ─ */
 .alert{padding:.65rem 1rem;border-radius:var(--radius);font-size:.8rem;margin-top:1rem;display:none}
 .alert.ok{background:rgba(57,255,20,.08);border:1px solid rgba(57,255,20,.25);color:var(--green)}
+.alert.info{background:rgba(0,212,255,.06);border:1px solid var(--border);color:var(--accent)}
 .alert.err{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.25);color:var(--red)}
 
 @media(max-width:620px){
@@ -179,6 +187,7 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
         <h2>Blog Posts</h2>
         <button class="primary" onclick="openNew()">+ New Post</button>
       </div>
+      <p class="empty" style="padding:0 0 1rem">Saving commits to GitHub; the site rebuilds and changes go live in ~1–2 minutes.</p>
       <div id="posts-container"><p class="empty">Loading…</p></div>
     </div>
 
@@ -187,7 +196,8 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
       <div class="ed-header">
         <button onclick="backToList()">← Back</button>
         <h2 id="ed-heading">New Post</h2>
-        <button class="primary" onclick="savePost()">Save</button>
+        <a id="view-live" target="_blank" rel="noopener" style="display:none;font-size:.8rem">View live ↗</a>
+        <button class="primary" id="save-btn" onclick="savePost()">Save</button>
       </div>
       <div class="ed-grid">
         <div class="field ed-full">
@@ -196,7 +206,7 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
         </div>
         <div class="field">
           <label>Slug</label>
-          <input id="f-slug" type="text" placeholder="post-slug">
+          <input id="f-slug" type="text" placeholder="post-slug" pattern="[a-z0-9]+(-[a-z0-9]+)*">
         </div>
         <div class="field">
           <label>Date</label>
@@ -232,247 +242,300 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
 
 <script>
 var editingSlug = null;
+var JSON_HDR = {'Content-Type':'application/json'};
 
-document.getElementById('f-pub').addEventListener('change', updateToggleLabel);
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function showApp(){ $('login-wrap').style.display='none'; $('app').style.display='flex'; loadPosts(); }
 
 function updateToggleLabel(){
-  document.getElementById('toggle-label').textContent = document.getElementById('f-pub').checked ? 'Published' : 'Draft';
+  $('toggle-label').textContent = $('f-pub').checked ? 'Published' : 'Draft';
+}
+
+// Every API call carries X-Requested-With; the server rejects requests without it (CSRF guard).
+async function api(url, opts){
+  opts = opts || {};
+  opts.credentials = 'same-origin';
+  opts.headers = Object.assign({'X-Requested-With':'admin'}, opts.headers || {});
+  var r = await fetch(url, opts);
+  if (r.status === 401 && url !== '/admin/api/login' && url !== '/admin/api/check') {
+    location.reload(); throw new Error('session expired');
+  }
+  return r;
 }
 
 async function doLogin(){
-  var pw = document.getElementById('pw').value;
-  var r = await fetch('/admin/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw}),credentials:'include'});
-  if(r.ok){
-    document.getElementById('login-wrap').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadPosts();
-  } else {
-    document.getElementById('login-err').style.display='block';
+  var r = await api('/admin/api/login',{method:'POST',headers:JSON_HDR,body:JSON.stringify({password:$('pw').value})});
+  if(r.ok){ $('pw').value=''; $('login-err').style.display='none'; showApp(); }
+  else {
+    var b = await r.json().catch(function(){ return {}; });
+    $('login-err').textContent = r.status===401 ? 'Incorrect password.' : (b.error || 'Login failed.');
+    $('login-err').style.display='block';
   }
 }
 
 async function doLogout(){
-  await fetch('/admin/api/logout',{method:'POST',credentials:'include'});
+  await api('/admin/api/logout',{method:'POST'});
   location.reload();
 }
 
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 async function loadPosts(){
-  var r = await fetch('/api/posts',{credentials:'include'});
-  var posts = await r.json();
-  var el = document.getElementById('posts-container');
-  if(!posts.length){ el.innerHTML='<p class="empty">No posts yet. Create your first one.</p>'; return; }
-  var html = '';
-  for(var i=0;i<posts.length;i++){
-    var p=posts[i];
-    html += '<div class="post-row">' +
-      '<div class="info"><div class="title">'+esc(p.title)+'</div><div class="meta">'+esc(p.slug)+' &middot; '+esc(p.date)+'</div></div>' +
-      '<span class="badge '+esc(p.status)+'">'+esc(p.status)+'</span>' +
-      '<div class="row-actions">' +
-        '<button class="sm" onclick="openEdit(\''+esc(p.slug)+'\')">Edit</button>' +
-        '<button class="sm danger" onclick="delPost(\''+esc(p.slug)+'\')">Delete</button>' +
-      '</div></div>';
+  var el = $('posts-container');
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  var r = await api('/admin/api/posts');
+  if(!r.ok){
+    var b = await r.json().catch(function(){ return {}; });
+    el.innerHTML = '<p class="empty" style="color:var(--red)">Could not load posts: '+esc(b.error||r.status)+'</p>';
+    return;
   }
-  el.innerHTML=html;
+  var posts = await r.json();
+  if(!posts.length){ el.innerHTML='<p class="empty">No posts yet. Create your first one.</p>'; return; }
+  el.innerHTML = posts.map(function(p){
+    var status = p.draft ? 'draft' : 'published';
+    return '<div class="post-row">' +
+      '<div class="info"><div class="title">'+esc(p.title)+'</div><div class="meta">'+esc(p.slug)+' &middot; '+esc(p.date)+'</div></div>' +
+      '<span class="badge '+status+'">'+status+'</span>' +
+      '<div class="row-actions">' +
+        '<button class="sm" data-act="edit" data-slug="'+esc(p.slug)+'">Edit</button>' +
+        '<button class="sm danger" data-act="del" data-slug="'+esc(p.slug)+'">Delete</button>' +
+      '</div></div>';
+  }).join('');
 }
 
-function clearEditor(){
-  document.getElementById('f-title').value='';
-  document.getElementById('f-slug').value='';
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
-  document.getElementById('f-excerpt').value='';
-  document.getElementById('f-content').value='';
-  document.getElementById('f-pub').checked=false;
-  document.getElementById('toggle-label').textContent='Draft';
-  document.getElementById('preview').innerHTML='';
-  document.getElementById('save-alert').style.display='none';
+$('posts-container').addEventListener('click', function(e){
+  var b = e.target.closest('button[data-act]');
+  if(!b) return;
+  if(b.dataset.act==='edit') openEdit(b.dataset.slug);
+  else delPost(b.dataset.slug);
+});
+
+function setLiveLink(){
+  var a = $('view-live');
+  if(editingSlug && $('f-pub').checked){ a.href='/blog/'+encodeURIComponent(editingSlug)+'/'; a.style.display='inline'; }
+  else a.style.display='none';
+}
+
+function showEditor(heading){
+  $('ed-heading').textContent=heading;
+  $('save-alert').style.display='none';
+  $('list-view').style.display='none';
+  $('editor').style.display='block';
+  setLiveLink();
 }
 
 function openNew(){
   editingSlug=null;
-  clearEditor();
-  document.getElementById('ed-heading').textContent='New Post';
-  document.getElementById('list-view').style.display='none';
-  document.getElementById('editor').style.display='block';
+  $('f-title').value=''; $('f-slug').value=''; $('f-excerpt').value=''; $('f-content').value='';
+  $('f-date').value=new Date().toISOString().split('T')[0];
+  $('f-pub').checked=false;
+  updateToggleLabel(); updatePreview();
+  showEditor('New Post');
 }
 
 async function openEdit(slug){
-  var r = await fetch('/api/posts/'+encodeURIComponent(slug),{credentials:'include'});
+  var r = await api('/admin/api/posts/'+encodeURIComponent(slug));
   if(!r.ok){ alert('Could not load post.'); return; }
   var p = await r.json();
   editingSlug=slug;
-  document.getElementById('f-title').value=p.title;
-  document.getElementById('f-slug').value=p.slug;
-  document.getElementById('f-date').value=p.date;
-  document.getElementById('f-excerpt').value=p.excerpt;
-  document.getElementById('f-content').value=p.content;
-  document.getElementById('f-pub').checked=p.status==='published';
-  updateToggleLabel();
-  updatePreview();
-  document.getElementById('ed-heading').textContent='Edit Post';
-  document.getElementById('save-alert').style.display='none';
-  document.getElementById('list-view').style.display='none';
-  document.getElementById('editor').style.display='block';
+  $('f-title').value=p.title; $('f-slug').value=p.slug; $('f-date').value=p.date;
+  $('f-excerpt').value=p.excerpt; $('f-content').value=p.content;
+  $('f-pub').checked=!p.draft;
+  updateToggleLabel(); updatePreview();
+  showEditor('Edit Post');
 }
 
 function backToList(){
-  document.getElementById('editor').style.display='none';
-  document.getElementById('list-view').style.display='block';
+  $('editor').style.display='none';
+  $('list-view').style.display='block';
   loadPosts();
 }
 
 function syncSlug(){
   if(editingSlug) return;
-  var t=document.getElementById('f-title').value;
-  document.getElementById('f-slug').value=t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  $('f-slug').value=$('f-title').value.toLowerCase().replace(/đ/g,'dj').normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 }
 
 function updatePreview(){
-  var md=document.getElementById('f-content').value;
-  document.getElementById('preview').innerHTML = (typeof marked!=='undefined') ? marked.parse(md) : md;
+  var md=$('f-content').value;
+  $('preview').innerHTML = (window.marked && window.DOMPurify) ? DOMPurify.sanitize(marked.parse(md)) : esc(md);
+}
+
+function flash(text, kind, persist){
+  var el=$('save-alert');
+  el.textContent=text; el.className='alert ed-full '+kind; el.style.display='block';
+  clearTimeout(flash.t);
+  if(!persist) flash.t=setTimeout(function(){ el.style.display='none'; }, 6000);
 }
 
 async function savePost(){
   var post={
-    title:document.getElementById('f-title').value,
-    slug:document.getElementById('f-slug').value,
-    date:document.getElementById('f-date').value,
-    excerpt:document.getElementById('f-excerpt').value,
-    content:document.getElementById('f-content').value,
-    status:document.getElementById('f-pub').checked?'published':'draft'
+    title:$('f-title').value.trim(),
+    slug:$('f-slug').value.trim(),
+    date:$('f-date').value,
+    excerpt:$('f-excerpt').value.trim(),
+    content:$('f-content').value,
+    draft:!$('f-pub').checked
   };
-  var method=editingSlug?'PUT':'POST';
-  var url=editingSlug?'/admin/api/posts/'+encodeURIComponent(editingSlug):'/admin/api/posts';
-  var r=await fetch(url,{method:method,credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(post)});
-  var alert_el=document.getElementById('save-alert');
-  if(r.ok){
-    editingSlug=post.slug;
-    document.getElementById('ed-heading').textContent='Edit Post';
-    alert_el.textContent='Saved successfully.';
-    alert_el.className='alert ok';
-  } else {
-    var body=await r.json().catch(function(){ return {}; });
-    alert_el.textContent='Save failed: '+(body.error||'unknown error');
-    alert_el.className='alert err';
-  }
-  alert_el.style.display='block';
-  setTimeout(function(){ alert_el.style.display='none'; }, 4000);
+  if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(post.slug)){ flash('Slug may only contain lowercase letters, digits and single dashes.','err'); return; }
+  var btn=$('save-btn'); btn.disabled=true; btn.textContent='Saving…';
+  flash('Committing to GitHub…','info',true);
+  try {
+    var r=await api(editingSlug?'/admin/api/posts/'+encodeURIComponent(editingSlug):'/admin/api/posts',
+      {method:editingSlug?'PUT':'POST',headers:JSON_HDR,body:JSON.stringify(post)});
+    if(r.ok){
+      editingSlug=post.slug;
+      $('ed-heading').textContent='Edit Post';
+      setLiveLink();
+      flash('Saved. The site is rebuilding — live in ~1–2 minutes.','ok');
+    } else {
+      var b=await r.json().catch(function(){ return {}; });
+      flash('Save failed: '+(b.error||('HTTP '+r.status)),'err');
+    }
+  } catch(e) {
+    flash('Save failed: '+e.message,'err');
+  } finally { btn.disabled=false; btn.textContent='Save'; }
 }
 
 async function delPost(slug){
-  if(!confirm('Delete "'+slug+'"? This cannot be undone.')) return;
-  var r=await fetch('/admin/api/posts/'+encodeURIComponent(slug),{method:'DELETE',credentials:'include'});
+  if(!confirm('Delete "'+slug+'"? It stays recoverable from git history.')) return;
+  var r=await api('/admin/api/posts/'+encodeURIComponent(slug),{method:'DELETE'});
   if(r.ok) loadPosts();
   else alert('Delete failed.');
 }
 
+$('f-pub').addEventListener('change', setLiveLink);
+
 // Auto-check session on load
-fetch('/admin/api/check',{credentials:'include'}).then(function(r){
-  if(r.ok){
-    document.getElementById('login-wrap').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadPosts();
-  }
-});
+api('/admin/api/check').then(function(r){ if(r.ok) showApp(); }).catch(function(){});
 </script>
 </body>
 </html>`;
 
+// ── Validation ─────────────────────────────────────────────────
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function validate(body: any): Post | string {
+  if (!body || typeof body !== 'object') return 'Bad request';
+  const { slug, title, date, excerpt, content, draft } = body;
+  if (typeof slug !== 'string' || !SLUG_RE.test(slug) || slug.length > 100) return 'Invalid slug';
+  if (typeof title !== 'string' || !title.trim() || title.length > 200) return 'Title is required (max 200 chars)';
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(Date.parse(date))) return 'Invalid date';
+  if (typeof excerpt !== 'string' || excerpt.length > 500) return 'Excerpt must be at most 500 chars';
+  if (typeof content !== 'string' || content.length > 500_000) return 'Invalid content';
+  if (typeof draft !== 'boolean') return 'Invalid status';
+  return { slug, title: title.trim(), date, excerpt: excerpt.trim(), content, draft };
+}
+
+function errorResponse(err: unknown): Response {
+  if (err instanceof GitHubError) {
+    if (err.status === 404 || err.status === 409) return json({ error: err.message }, err.status);
+    console.error(err.message);
+    if (err.status === 401 || err.status === 403) {
+      return json({ error: 'GitHub rejected the token — check GITHUB_TOKEN permissions/expiry' }, 502);
+    }
+    return json({ error: 'GitHub API error (' + err.status + ')' }, 502);
+  }
+  console.error(err);
+  return json({ error: 'Internal error' }, 500);
+}
+
+async function readBody(request: Request): Promise<unknown> {
+  try { return await request.json(); } catch { return null; }
+}
+
 // ── Route handler ──────────────────────────────────────────────
+
+const REQUIRED_ENV = ['ADMIN_PASSWORD', 'SESSION_SECRET', 'GITHUB_TOKEN', 'GITHUB_REPO'] as const;
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
   const { request, env } = ctx;
-  const url  = new URL(request.url);
-  const path = url.pathname;
+  const url    = new URL(request.url);
+  const path   = url.pathname;
   const method = request.method;
 
-  // CORS preflight
-  if (method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin':  '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+  const missing = REQUIRED_ENV.filter(k => !env[k]);
+  if (missing.length) {
+    return new Response(
+      'Admin is not configured. Missing environment variables: ' + missing.join(', '),
+      { status: 503, headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' } },
+    );
   }
-
-  await seedIfEmpty(env);
 
   // ── Serve admin SPA ──────────────────────────────────────────
   if ((path === '/admin' || path === '/admin/') && method === 'GET') {
     return html(ADMIN_HTML);
   }
 
+  if (!path.startsWith('/admin/api/')) return json({ error: 'Not found' }, 404);
+
+  // CSRF guard: a custom header can't be sent cross-site without a CORS
+  // preflight, and we never answer preflights.
+  if (request.headers.get('X-Requested-With') !== 'admin') {
+    return json({ error: 'Forbidden' }, 403);
+  }
+
   // ── Auth endpoints ───────────────────────────────────────────
 
   if (path === '/admin/api/login' && method === 'POST') {
-    let body: { password?: string };
-    try { body = await request.json(); } catch { return json({ error: 'Bad request' }, 400); }
-    if (!body.password || body.password !== env.ADMIN_PASSWORD) {
+    const body = await readBody(request) as { password?: unknown } | null;
+    const ok = typeof body?.password === 'string' && await safeEqual(body.password, env.ADMIN_PASSWORD);
+    if (!ok) {
+      await new Promise(r => setTimeout(r, 1000)); // slow down guessing
       return json({ error: 'Unauthorized' }, 401);
     }
-    const cookie = await createSessionCookie(env.ADMIN_PASSWORD);
-    return json({ ok: true }, 200, { 'Set-Cookie': cookie });
+    return json({ ok: true }, 200, { 'Set-Cookie': await createSessionCookie(env.SESSION_SECRET) });
   }
 
   if (path === '/admin/api/logout' && method === 'POST') {
     return json({ ok: true }, 200, { 'Set-Cookie': clearSessionCookie() });
   }
 
-  if (path === '/admin/api/check' && method === 'GET') {
-    if (await verifySession(request, env.ADMIN_PASSWORD)) {
-      return json({ ok: true });
-    }
+  if (!(await verifySession(request, env.SESSION_SECRET))) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
   // ── Protected admin API ──────────────────────────────────────
 
-  if (path.startsWith('/admin/api/')) {
-    if (!(await verifySession(request, env.ADMIN_PASSWORD))) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
-
-    // POST /admin/api/posts  — create
-    if (path === '/admin/api/posts' && method === 'POST') {
-      let post: Post;
-      try { post = await request.json(); } catch { return json({ error: 'Bad request' }, 400); }
-      if (!post.slug || !post.title) return json({ error: 'Missing slug or title' }, 400);
-      const existing = await getPost(env, post.slug);
-      if (existing) return json({ error: 'Slug already exists' }, 409);
-      await upsertPost(env, post);
-      return json({ ok: true, slug: post.slug }, 201);
-    }
-
-    // PUT /admin/api/posts/:slug  — update
-    const putMatch = path.match(/^\/admin\/api\/posts\/([^/]+)$/);
-    if (putMatch && method === 'PUT') {
-      const oldSlug = decodeURIComponent(putMatch[1]);
-      let post: Post;
-      try { post = await request.json(); } catch { return json({ error: 'Bad request' }, 400); }
-      if (!post.slug || !post.title) return json({ error: 'Missing slug or title' }, 400);
-      await upsertPost(env, post, oldSlug);
+  try {
+    if (path === '/admin/api/check' && method === 'GET') {
       return json({ ok: true });
     }
 
-    // DELETE /admin/api/posts/:slug  — delete
-    const delMatch = path.match(/^\/admin\/api\/posts\/([^/]+)$/);
-    if (delMatch && method === 'DELETE') {
-      const slug = decodeURIComponent(delMatch[1]);
-      await deletePost(env, slug);
-      return json({ ok: true });
+    if (path === '/admin/api/posts') {
+      if (method === 'GET') return json(await listPosts(env));
+      if (method === 'POST') {
+        const post = validate(await readBody(request));
+        if (typeof post === 'string') return json({ error: post }, 400);
+        await savePost(env, post);
+        return json({ ok: true, slug: post.slug }, 201);
+      }
     }
 
-    // POST /admin/api/reseed  — reset KV to default posts
-    if (path === '/admin/api/reseed' && method === 'POST') {
-      await reseedDefaults(env);
-      return json({ ok: true });
+    const m = path.match(/^\/admin\/api\/posts\/([^/]+)$/);
+    if (m) {
+      const slug = decodeURIComponent(m[1]);
+      if (!SLUG_RE.test(slug)) return json({ error: 'Not found' }, 404);
+
+      if (method === 'GET') {
+        const post = await getPost(env, slug);
+        return post ? json(post) : json({ error: 'Not found' }, 404);
+      }
+      if (method === 'PUT') {
+        const post = validate(await readBody(request));
+        if (typeof post === 'string') return json({ error: post }, 400);
+        await savePost(env, post, slug);
+        return json({ ok: true });
+      }
+      if (method === 'DELETE') {
+        return (await removePost(env, slug)) ? json({ ok: true }) : json({ error: 'Not found' }, 404);
+      }
     }
 
     return json({ error: 'Not found' }, 404);
+  } catch (err) {
+    return errorResponse(err);
   }
-
-  return json({ error: 'Not found' }, 404);
 };

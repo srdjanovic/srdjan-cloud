@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# Admin saves commit in quick succession; only deploy the newest one.
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -16,8 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
       - name: Build
-        run: npm install && npm run build
+        run: npm ci && npm run build
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

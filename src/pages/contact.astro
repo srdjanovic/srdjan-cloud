@@ -2,6 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+
+// Set PUBLIC_FORMSPREE_ID (e.g. "xyzabcd") as a build env var / GitHub Actions
+// variable. Without it the form is hidden instead of silently failing.
+const formspreeId = import.meta.env.PUBLIC_FORMSPREE_ID;
 ---
 
 <Layout
@@ -73,15 +77,10 @@ import Footer from '../components/Footer.astro';
         <div class="contact-form-wrap">
           <div class="card form-card">
             <h2 class="form-title">Send a message</h2>
-            <p class="form-note">
-              <!--
-                Replace YOUR_FORM_ID below with your Formspree form ID.
-                Sign up at https://formspree.io to get one.
-              -->
-            </p>
+            {formspreeId ? (
             <form
               id="contact-form"
-              action="https://formspree.io/f/YOUR_FORM_ID"
+              action={`https://formspree.io/f/${formspreeId}`}
               method="POST"
               novalidate
             >
@@ -103,6 +102,12 @@ import Footer from '../components/Footer.astro';
                 <span id="submit-spinner" class="btn-spinner" hidden></span>
               </button>
             </form>
+            ) : (
+              <p class="form-fallback">
+                The contact form is offline — email me at
+                <a href="mailto:misrdan@gmail.com">misrdan@gmail.com</a>.
+              </p>
+            )}
           </div>
         </div>
 
@@ -114,6 +119,7 @@ import Footer from '../components/Footer.astro';
 </Layout>
 
 <style>
+  .form-fallback { color: var(--muted); }
   .contact-main { padding-top: var(--nav-h); padding-bottom: 5rem; }
 
   .contact-layout {

@@ -9,6 +9,8 @@
     "deploy": "astro build && wrangler pages deploy dist --project-name=srdjan-cloud"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.2.1",
     "astro": "^4.16.0"
   },
   "devDependencies": {

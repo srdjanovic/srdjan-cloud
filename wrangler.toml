@@ -2,11 +2,12 @@ name = "srdjan-cloud"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
 
-# Create KV namespace with: wrangler kv namespace create BLOG_KV
-# Then replace the id values below
-[[kv_namespaces]]
-binding = "BLOG_KV"
-id = "6ce89af498cc41908b4c38ed42e1729b"
-preview_id = "73ed8d03db5347b583f96a10c8ffec94"
-
-# Set admin password with: wrangler secret put ADMIN_PASSWORD
+# The /admin blog editor (functions/admin) needs these set on the Pages
+# project (Dashboard → Workers & Pages → srdjan-cloud → Settings → Variables
+# and Secrets, or `npx wrangler pages secret put NAME --project-name=srdjan-cloud`):
+#   ADMIN_PASSWORD  long random password for /admin
+#   SESSION_SECRET  random string used to sign session cookies
+#   GITHUB_TOKEN    fine-grained PAT, Contents: read & write on this repo only
+[vars]
+GITHUB_REPO   = "srdjanovic/srdjan-cloud"
+GITHUB_BRANCH = "main"

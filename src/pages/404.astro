@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Not found" description="Page not found.">
+  <Nav />
+  <main style="padding-top: var(--nav-h); padding-bottom: 5rem;">
+    <div class="container">
+      <header class="page-header">
+        <p class="page-header__tag">// 404</p>
+        <h1 class="page-header__title">Not found.</h1>
+        <p class="page-header__lead">
+          That page doesn't exist. Try the <a href="/">home page</a> or the <a href="/blog/">blog</a>.
+        </p>
+      </header>
+    </div>
+  </main>
+  <Footer />
+</Layout>
