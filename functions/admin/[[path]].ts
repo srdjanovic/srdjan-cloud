@@ -295,7 +295,7 @@ textarea.drop{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.15
           <button class="sm" data-days="1" onclick="setRange(1)">24 h</button>
           <button class="sm active" data-days="7" onclick="setRange(7)">7 days</button>
           <button class="sm" data-days="30" onclick="setRange(30)">30 days</button>
-          <button class="sm" onclick="loadAnalytics()" title="Refresh" aria-label="Refresh">↻</button>
+          <button class="sm" onclick="loadAnalytics(true)" title="Refresh (skip cache)" aria-label="Refresh">↻</button>
         </div>
       </div>
       <div id="an-body"></div>
@@ -311,7 +311,10 @@ var JSON_HDR = {'Content-Type':'application/json'};
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
-function showApp(){ $('login-wrap').style.display='none'; $('app').style.display='flex'; loadPosts(); }
+function showApp(){
+  $('login-wrap').style.display='none'; $('app').style.display='flex'; loadPosts();
+  fetchAnalytics(anDays).catch(function(){}); // warm up the Analytics tab
+}
 
 function updateToggleLabel(){
   $('toggle-label').textContent = $('f-pub').checked ? 'Published' : 'Draft';
@@ -595,13 +598,32 @@ function kpi(label, val, sub){
     (sub ? '<div class="kpi-sub">'+esc(sub)+'</div>' : '') + '</div>';
 }
 
-async function loadAnalytics(){
-  var el = $('an-body');
-  el.innerHTML = '<p class="empty">Loading…</p>';
-  var r = await api('/admin/api/analytics?days='+anDays);
-  var raw = await r.text(), d = {};
-  try { d = JSON.parse(raw); } catch(e) {}
-  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status+': '+raw.replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').slice(0,300))); return; }
+// In-page memo of in-flight/finished requests per range (5 min), on top of
+// the server's 5-minute cache. Switching ranges back and forth is instant.
+var anCache = {};
+
+function fetchAnalytics(days, fresh){
+  if(!fresh && anCache[days]) return anCache[days];
+  var p = api('/admin/api/analytics?days='+days+(fresh ? '&fresh=1' : '')).then(async function(r){
+    var raw = await r.text(), d = {};
+    try { d = JSON.parse(raw); } catch(e) {}
+    if(!r.ok) throw new Error(d.error || ('HTTP '+r.status+': '+raw.replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').slice(0,300)));
+    return d;
+  });
+  anCache[days] = p;
+  p.catch(function(){ if(anCache[days]===p) delete anCache[days]; });
+  setTimeout(function(){ if(anCache[days]===p) delete anCache[days]; }, 300000);
+  return p;
+}
+
+async function loadAnalytics(fresh){
+  var el = $('an-body'), days = anDays;
+  var slow = setTimeout(function(){ el.innerHTML = '<p class="empty">Loading…</p>'; }, 150);
+  var d;
+  try { d = await fetchAnalytics(days, fresh); }
+  catch(e) { clearTimeout(slow); el.innerHTML = errP(e.message); return; }
+  clearTimeout(slow);
+  if(days !== anDays) return; // user switched range meanwhile
 
   var t = d.totals || {}, p = d.perf || {};
   var okT = !t.error, okP = !p.error && p.p50ms!=null;
@@ -625,7 +647,7 @@ async function loadAnalytics(){
     list('Operating systems', d.os) +
     '</div>';
 
-  h += '<p class="empty" style="font-size:.75rem">Cloudflare Web Analytics — cookie-free, aggregated, no personal data. Loaded '+new Date().toLocaleTimeString('en-GB')+'.</p>';
+  h += '<p class="empty" style="font-size:.75rem">Cloudflare Web Analytics — cookie-free, aggregated, no personal data. Data as of '+new Date(d.generatedAt || Date.now()).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' (cached up to 5 min — ↻ for fresh).</p>';
   el.innerHTML = h;
   wireChart();
 }
@@ -870,9 +892,24 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
     if (path === '/admin/api/analytics' && method === 'GET') {
       if (!env.CF_ANALYTICS_TOKEN) return json({ error: 'CF_ANALYTICS_TOKEN is not set' }, 503);
-      const d = Number(url.searchParams.get('days'));
+      const n    = Number(url.searchParams.get('days'));
+      const days = [1, 7, 30].includes(n) ? n : 7;
+      // Per-datacenter cache for 5 minutes; the key URL is never publicly served.
+      const cacheKey = new Request(`${url.origin}/__admin-cache/analytics/${days}`);
+      const cache    = (caches as unknown as { default: Cache }).default;
       try {
-        return json(await getAnalytics(env, [1, 7, 30].includes(d) ? d : 7));
+        if (url.searchParams.get('fresh') !== '1') {
+          const hit = await cache.match(cacheKey);
+          if (hit) return json(await hit.json(), 200, { 'X-Cache': 'HIT' });
+        }
+        const data = await getAnalytics(env, days);
+        const ok   = Object.values(data).every(v => !(v && typeof v === 'object' && 'error' in v));
+        if (ok) {
+          ctx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(data), {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=300' },
+          })));
+        }
+        return json(data, 200, { 'X-Cache': 'MISS' });
       } catch (e) {
         const msg = e instanceof Error ? (e.message || e.name) : String(e);
         console.error('analytics failed', e);
