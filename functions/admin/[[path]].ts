@@ -448,6 +448,8 @@ async function readBody(request: Request): Promise<unknown> {
 
 // ── Route handler ──────────────────────────────────────────────
 
+const ADMIN_HOSTS = ['srdjan.cloud', 'localhost', '127.0.0.1'];
+
 const REQUIRED_ENV = ['ADMIN_PASSWORD', 'SESSION_SECRET', 'GITHUB_TOKEN', 'GITHUB_REPO'] as const;
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
@@ -455,6 +457,12 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   const url    = new URL(request.url);
   const path   = url.pathname;
   const method = request.method;
+
+  // Cloudflare Access guards /admin on srdjan.cloud only; the *.pages.dev
+  // hostnames can't be covered, so the admin refuses to answer there.
+  if (!ADMIN_HOSTS.includes(url.hostname)) {
+    return new Response('Not found', { status: 404 });
+  }
 
   const missing = REQUIRED_ENV.filter(k => !env[k]);
   if (missing.length) {
