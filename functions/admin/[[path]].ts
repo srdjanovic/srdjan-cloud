@@ -3,8 +3,9 @@ import {
   verifySession, createSessionCookie, clearSessionCookie, safeEqual,
 } from '../_shared/auth';
 import {
-  listPosts, getPost, savePost, removePost, GitHubError,
+  listPosts, getPost, savePost, removePost, uploadImage, GitHubError,
 } from '../_shared/github';
+import { getAnalytics } from '../_shared/analytics';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -148,7 +149,46 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
 .alert.info{background:rgba(0,212,255,.06);border:1px solid var(--border);color:var(--accent)}
 .alert.err{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.25);color:var(--red)}
 
+/* ─ Tabs / analytics ─ */
+.tabs{display:flex;gap:.25rem;flex:1;margin-left:1.5rem}
+.tab{border-color:transparent;color:var(--muted)}
+.tab.active{border-color:var(--border);color:var(--accent);background:rgba(0,212,255,.06)}
+#analytics-view{display:none}
+.range{display:flex;gap:.3rem;flex-wrap:wrap}
+.range button.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.75rem;margin-bottom:1rem}
+.kpi,.card-an{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.15rem}
+.kpi-label,.card-an h3{font-family:'JetBrains Mono',monospace;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+.kpi-val{font-size:1.75rem;font-weight:600;margin-top:.2rem;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:.72rem;color:var(--muted)}
+.card-an{margin-bottom:1rem;min-width:0}
+.card-an h3{margin-bottom:.75rem}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 1rem}
+.chart-wrap{position:relative}
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:rgba(255,255,255,.07);stroke-width:1}
+.chart .ylab,.chart .xlab{fill:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace}
+.chart .bar{fill:var(--accent)}
+.chart .hit{fill:transparent;cursor:default}
+.chart .hit.on{fill:rgba(255,255,255,.05)}
+.tip{position:absolute;pointer-events:none;background:#0F172A;border:1px solid var(--border-h);border-radius:6px;padding:.4rem .6rem;font-size:.75rem;white-space:nowrap;z-index:5}
+.rank{width:100%;border-collapse:collapse;font-size:.82rem;table-layout:fixed}
+.rank th{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);text-align:right;font-weight:500;padding-bottom:.3rem;width:4.5rem}
+.rank th:first-child{width:auto}
+.rank td{padding:.3rem 0 .3rem .75rem;vertical-align:top;font-variant-numeric:tabular-nums;text-align:right;color:var(--muted)}
+.rank td:first-child{text-align:left;padding-left:0;color:var(--text)}
+.rk-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-bar{height:3px;background:var(--accent);opacity:.6;border-radius:2px;margin-top:.25rem}
+
+/* ─ Editor tools ─ */
+.content-head{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem}
+.content-head label{margin:0;flex:1}
+.hint{font-size:.7rem;color:var(--muted);margin-top:.35rem}
+textarea.drop{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.15)}
+
 @media(max-width:620px){
+  header{flex-wrap:wrap;gap:.5rem}
+  .tabs{order:3;margin-left:0;width:100%}
   .ed-grid{grid-template-columns:1fr}
   .ed-split{grid-template-columns:1fr}
   .post-row{flex-direction:column;align-items:flex-start}
@@ -177,6 +217,10 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
 <div id="app" style="display:none">
   <header>
     <span class="logo">srdjan<span>.cloud</span> / admin</span>
+    <nav class="tabs">
+      <button class="sm tab active" data-view="posts" onclick="showView('posts');loadPosts()">Posts</button>
+      <button class="sm tab" data-view="analytics" onclick="showView('analytics')">Analytics</button>
+    </nav>
     <button onclick="doLogout()" class="sm">Log out</button>
   </header>
   <main>
@@ -225,16 +269,36 @@ main{flex:1;padding:1.75rem;max-width:960px;width:100%;margin:0 auto}
         </div>
         <div class="ed-split">
           <div class="field" style="display:flex;flex-direction:column">
-            <label>Markdown Content</label>
+            <div class="content-head">
+              <label for="f-content">Markdown Content</label>
+              <button type="button" class="sm" onclick="pickImage()">+ Image</button>
+              <button type="button" class="sm" onclick="openFullPreview()">Full preview ↗</button>
+              <input type="file" id="img-input" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple hidden>
+            </div>
             <textarea id="f-content" rows="22" placeholder="Write your post in Markdown…" oninput="updatePreview()"></textarea>
           </div>
           <div class="preview-wrap">
-            <span class="preview-label">Live Preview</span>
+            <span class="preview-label">Quick Preview</span>
             <div class="preview-pane" id="preview"></div>
           </div>
         </div>
+        <p class="hint ed-full">Tip: drag &amp; drop or paste images straight into the editor. Max 5 MB each.</p>
         <div id="save-alert" class="alert ed-full"></div>
       </div>
+    </div>
+
+    <!-- Analytics view -->
+    <div id="analytics-view">
+      <div class="toolbar">
+        <h2>Visitors</h2>
+        <div class="range">
+          <button class="sm" data-days="1" onclick="setRange(1)">24 h</button>
+          <button class="sm active" data-days="7" onclick="setRange(7)">7 days</button>
+          <button class="sm" data-days="30" onclick="setRange(30)">30 days</button>
+          <button class="sm" onclick="loadAnalytics()" title="Refresh" aria-label="Refresh">↻</button>
+        </div>
+      </div>
+      <div id="an-body"></div>
     </div>
 
   </main>
@@ -319,9 +383,9 @@ function setLiveLink(){
 function showEditor(heading){
   $('ed-heading').textContent=heading;
   $('save-alert').style.display='none';
-  $('list-view').style.display='none';
-  $('editor').style.display='block';
+  showView('editor');
   setLiveLink();
+  sendFullPreview();
 }
 
 function openNew(){
@@ -346,8 +410,7 @@ async function openEdit(slug){
 }
 
 function backToList(){
-  $('editor').style.display='none';
-  $('list-view').style.display='block';
+  showView('posts');
   loadPosts();
 }
 
@@ -359,7 +422,8 @@ function syncSlug(){
 
 function updatePreview(){
   var md=$('f-content').value;
-  $('preview').innerHTML = (window.marked && window.DOMPurify) ? DOMPurify.sanitize(marked.parse(md)) : esc(md);
+  $('preview').innerHTML = renderHtml(md);
+  sendFullPreview();
 }
 
 function flash(text, kind, persist){
@@ -407,6 +471,250 @@ async function delPost(slug){
 
 $('f-pub').addEventListener('change', setLiveLink);
 
+// ── Views ──────────────────────────────────────────────────────
+function showView(name){
+  $('list-view').style.display      = name==='posts'     ? 'block' : 'none';
+  $('editor').style.display         = name==='editor'    ? 'block' : 'none';
+  $('analytics-view').style.display = name==='analytics' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.view===(name==='editor' ? 'posts' : name));
+  });
+  if(name==='analytics') loadAnalytics();
+}
+
+// ── Images: button, paste, drag & drop ─────────────────────────
+// Uploaded images are committed to the repo and only served after the next
+// deploy, so previews use a local blob URL in the meantime.
+var localImages = {};
+var ta = $('f-content');
+
+function isImg(f){ return /^image\\/(png|jpeg|webp|gif|avif)$/.test(f.type); }
+function pickImage(){ $('img-input').click(); }
+
+$('img-input').addEventListener('change', function(){
+  Array.from(this.files).forEach(uploadImage);
+  this.value='';
+});
+ta.addEventListener('paste', function(e){
+  var files = Array.from((e.clipboardData && e.clipboardData.files) || []).filter(isImg);
+  if(files.length){ e.preventDefault(); files.forEach(uploadImage); }
+});
+ta.addEventListener('dragover', function(e){ e.preventDefault(); ta.classList.add('drop'); });
+ta.addEventListener('dragleave', function(){ ta.classList.remove('drop'); });
+ta.addEventListener('drop', function(e){
+  ta.classList.remove('drop');
+  var files = Array.from((e.dataTransfer && e.dataTransfer.files) || []).filter(isImg);
+  if(files.length){ e.preventDefault(); files.forEach(uploadImage); }
+});
+
+function insertAtCursor(text){
+  var s=ta.selectionStart, e=ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + text + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + text.length;
+  ta.focus();
+  updatePreview();
+}
+
+async function uploadImage(file){
+  if(!isImg(file)){ flash('Only PNG, JPEG, WebP, GIF or AVIF images.','err'); return; }
+  if(file.size > 5*1024*1024){ flash('Image too large (max 5 MB).','err'); return; }
+  var alt = file.name.replace(/\\.[^.]*$/,'').replace(/[-_]+/g,' ').trim() || 'image';
+  var placeholder = '![Uploading '+alt+'…](uploading-'+Math.random().toString(36).slice(2,8)+')';
+  insertAtCursor('\\n'+placeholder+'\\n');
+  flash('Uploading '+file.name+'…','info',true);
+  var fd = new FormData(); fd.append('file', file);
+  try {
+    var r = await api('/admin/api/images',{method:'POST',body:fd});
+    var b = await r.json().catch(function(){ return {}; });
+    if(!r.ok) throw new Error(b.error || ('HTTP '+r.status));
+    localImages[b.url] = URL.createObjectURL(file);
+    ta.value = ta.value.replace(placeholder, '!['+alt+']('+b.url+')');
+    updatePreview();
+    flash('Image uploaded — remember to Save the post.','ok');
+  } catch(e) {
+    ta.value = ta.value.replace('\\n'+placeholder+'\\n','').replace(placeholder,'');
+    updatePreview();
+    flash('Upload failed: '+e.message,'err');
+  }
+}
+
+function renderHtml(md){
+  if(!(window.marked && window.DOMPurify)) return '<pre>'+esc(md)+'</pre>';
+  var html = DOMPurify.sanitize(marked.parse(md));
+  Object.keys(localImages).forEach(function(u){
+    html = html.split('src="'+u+'"').join('src="'+localImages[u]+'"');
+  });
+  return html;
+}
+
+// ── Full-page preview ──────────────────────────────────────────
+// /preview/post/ renders with the real site layout; we push the draft to it.
+var previewWin = null;
+
+function openFullPreview(){
+  previewWin = window.open('/preview/post/', 'srdjan-post-preview');
+}
+
+window.addEventListener('message', function(e){
+  if(e.origin===location.origin && e.data && e.data.type==='post-preview-ready') sendFullPreview();
+});
+
+function sendFullPreview(){
+  if(!previewWin || previewWin.closed) return;
+  var d = $('f-date').value;
+  var words = $('f-content').value.split(/\\s+/).filter(Boolean).length;
+  var dateText = d
+    ? new Date(d+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
+      + ' · ' + Math.max(1, Math.round(words/220)) + ' min read'
+    : '';
+  previewWin.postMessage({type:'post-preview', post:{
+    title: $('f-title').value, excerpt: $('f-excerpt').value,
+    dateText: dateText, html: renderHtml($('f-content').value)
+  }}, location.origin);
+}
+
+['f-title','f-excerpt','f-date'].forEach(function(id){ $(id).addEventListener('input', sendFullPreview); });
+
+// ── Analytics ──────────────────────────────────────────────────
+var anDays = 7;
+var chartPts = [];
+
+function setRange(d){
+  anDays = d;
+  document.querySelectorAll('.range button[data-days]').forEach(function(b){
+    b.classList.toggle('active', +b.dataset.days===d);
+  });
+  loadAnalytics();
+}
+
+function fmt(n){ return n==null ? '–' : Number(n).toLocaleString('en-GB'); }
+function errP(m){ return '<p class="empty" style="color:var(--red)">Unavailable: '+esc(m || 'no data')+'</p>'; }
+function kpi(label, val, sub){
+  return '<div class="kpi"><div class="kpi-label">'+esc(label)+'</div>' +
+    '<div class="kpi-val">'+(val==null ? '–' : esc(typeof val==='number' ? fmt(val) : val))+'</div>' +
+    (sub ? '<div class="kpi-sub">'+esc(sub)+'</div>' : '') + '</div>';
+}
+
+async function loadAnalytics(){
+  var el = $('an-body');
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  var r = await api('/admin/api/analytics?days='+anDays);
+  var d = await r.json().catch(function(){ return {}; });
+  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status)); return; }
+
+  var t = d.totals || {}, p = d.perf || {};
+  var okT = !t.error, okP = !p.error && p.p50ms!=null;
+  var h = '<div class="kpis">' +
+    kpi('Visits', okT ? t.visits : null) +
+    kpi('Page views', okT ? t.views : null) +
+    kpi('Pages / visit', okT && t.visits ? (t.views/t.visits).toFixed(1) : null) +
+    kpi('Median load time', okP ? (p.p50ms/1000).toFixed(2)+' s' : null,
+        okP && p.p75ms!=null ? '75th percentile '+(p.p75ms/1000).toFixed(2)+' s' : '') +
+    '</div>';
+
+  h += '<div class="card-an"><h3>Visits per '+(d.step==='date' ? 'day' : 'hour')+'</h3>' +
+    (d.series && d.series.error ? errP(d.series.error) : barChart(fillSeries(d))) + '</div>';
+
+  h += '<div class="an-grid">' +
+    list('Top pages', d.pages, function(k){ return k || '/'; }) +
+    list('Referrers', d.referrers, function(k){ return k || 'Direct / none'; }) +
+    list('Countries', d.countries) +
+    list('Devices', d.devices) +
+    list('Browsers', d.browsers) +
+    list('Operating systems', d.os) +
+    '</div>';
+
+  h += '<p class="empty" style="font-size:.75rem">Cloudflare Web Analytics — cookie-free, aggregated, no personal data. Loaded '+new Date().toLocaleTimeString('en-GB')+'.</p>';
+  el.innerHTML = h;
+  wireChart();
+}
+
+function fillSeries(d){
+  var daily = d.step==='date', stepMs = daily ? 864e5 : 36e5, cut = daily ? 10 : 13;
+  var map = {};
+  (d.series || []).forEach(function(r){ map[r.key.slice(0,cut)] = r; });
+  var start = new Date(new Date(d.since).toISOString().slice(0,cut) + (daily ? 'T00:00:00Z' : ':00:00Z')).getTime();
+  var end = new Date(d.until).getTime(), out = [];
+  for(var ts=start; ts<=end; ts+=stepMs){
+    var k = new Date(ts).toISOString().slice(0,cut), r = map[k];
+    out.push({
+      label: daily
+        ? new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'})
+        : new Date(ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+      visits: r ? r.visits : 0,
+      views:  r ? r.views  : 0
+    });
+  }
+  return out;
+}
+
+function barChart(pts){
+  chartPts = pts;
+  var W=900, H=220, L=40, B=24, T=8, pw=W-L-4, ph=H-B-T;
+  var max = Math.max(1, Math.max.apply(null, pts.map(function(p){ return p.visits; })));
+  var step = Math.max(1, Math.ceil(max/3)), top = step*3;
+  var n = pts.length, slot = pw/n, bw = Math.max(1, slot-2);
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" class="chart" role="img" aria-label="Visits over time">';
+  for(var g=0; g<=3; g++){
+    var gy = T + ph - ph*g/3;
+    s += '<line x1="'+L+'" x2="'+W+'" y1="'+gy+'" y2="'+gy+'" class="grid"/>' +
+         '<text x="'+(L-8)+'" y="'+(gy+4)+'" class="ylab" text-anchor="end">'+fmt(step*g)+'</text>';
+  }
+  var every = Math.ceil(n/8);
+  pts.forEach(function(p,i){
+    var x = L + i*slot + 1, bh = ph*p.visits/top, y = T + ph - bh, r = Math.min(4, bw/2, bh), base = T + ph;
+    if(bh > 0){
+      s += '<path class="bar" d="M'+x+','+base+'V'+(y+r)+'Q'+x+','+y+' '+(x+r)+','+y +
+           'H'+(x+bw-r)+'Q'+(x+bw)+','+y+' '+(x+bw)+','+(y+r)+'V'+base+'Z"/>';
+    }
+    s += '<rect class="hit" data-i="'+i+'" x="'+(L+i*slot)+'" y="'+T+'" width="'+slot+'" height="'+ph+'"/>';
+    if(i % every === 0) s += '<text x="'+(x+bw/2)+'" y="'+(H-6)+'" class="xlab" text-anchor="middle">'+esc(p.label)+'</text>';
+  });
+  return '<div class="chart-wrap">'+s+'</svg><div class="tip" id="tip" hidden></div></div>';
+}
+
+function wireChart(){
+  var wrap = document.querySelector('.chart-wrap');
+  if(!wrap) return;
+  var tip = $('tip');
+  wrap.addEventListener('mousemove', function(e){
+    var hit = e.target.closest('.hit');
+    wrap.querySelectorAll('.hit.on').forEach(function(x){ x.classList.remove('on'); });
+    if(!hit){ tip.hidden = true; return; }
+    hit.classList.add('on');
+    var p = chartPts[+hit.dataset.i];
+    tip.innerHTML = '<b>'+esc(p.label)+'</b><br>'+fmt(p.visits)+' visits · '+fmt(p.views)+' page views';
+    tip.hidden = false;
+    var rc = wrap.getBoundingClientRect(), x = e.clientX - rc.left + 14;
+    if(x + tip.offsetWidth > rc.width) x = e.clientX - rc.left - tip.offsetWidth - 14;
+    tip.style.left = x+'px';
+    tip.style.top  = Math.max(0, e.clientY - rc.top - tip.offsetHeight - 8)+'px';
+  });
+  wrap.addEventListener('mouseleave', function(){
+    tip.hidden = true;
+    wrap.querySelectorAll('.hit.on').forEach(function(x){ x.classList.remove('on'); });
+  });
+}
+
+function list(title, rows, label){
+  label = label || function(k){ return k || 'Unknown'; };
+  var body;
+  if(!rows || rows.error) body = errP(rows && rows.error);
+  else if(!rows.length) body = '<p class="empty">No data yet.</p>';
+  else {
+    rows = rows.slice().sort(function(a,b){ return b.visits - a.visits; });
+    var max = rows[0].visits || 1;
+    body = '<table class="rank"><thead><tr><th></th><th>Visits</th><th>Views</th></tr></thead><tbody>' +
+      rows.map(function(r){
+        var l = esc(label(r.key));
+        return '<tr><td><div class="rk-label" title="'+l+'">'+l+'</div>' +
+          '<div class="rk-bar" style="width:'+(100*r.visits/max).toFixed(1)+'%"></div></td>' +
+          '<td>'+fmt(r.visits)+'</td><td>'+fmt(r.views)+'</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  return '<div class="card-an"><h3>'+esc(title)+'</h3>'+body+'</div>';
+}
+
 // Auto-check session on load
 api('/admin/api/check').then(function(r){ if(r.ok) showApp(); }).catch(function(){});
 </script>
@@ -444,6 +752,21 @@ function errorResponse(err: unknown): Response {
 
 async function readBody(request: Request): Promise<unknown> {
   try { return await request.json(); } catch { return null; }
+}
+
+// ── Images ─────────────────────────────────────────────────────
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// Trust the file's magic bytes, not its name or declared type (no SVG: it can carry script).
+function sniffImage(b: Uint8Array): string | null {
+  const ascii = (from: number, to: number) => String.fromCharCode(...b.subarray(from, to));
+  if (b[0] === 0x89 && ascii(1, 4) === 'PNG')               return 'png';
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff)      return 'jpg';
+  if (ascii(0, 4) === 'GIF8')                               return 'gif';
+  if (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP')    return 'webp';
+  if (ascii(4, 12) === 'ftypavif' || ascii(4, 12) === 'ftypavis') return 'avif';
+  return null;
 }
 
 // ── Route handler ──────────────────────────────────────────────
@@ -540,6 +863,27 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       if (method === 'DELETE') {
         return (await removePost(env, slug)) ? json({ ok: true }) : json({ error: 'Not found' }, 404);
       }
+    }
+
+    if (path === '/admin/api/analytics' && method === 'GET') {
+      if (!env.CF_ANALYTICS_TOKEN) return json({ error: 'CF_ANALYTICS_TOKEN is not set' }, 503);
+      const d = Number(url.searchParams.get('days'));
+      try {
+        return json(await getAnalytics(env, [1, 7, 30].includes(d) ? d : 7));
+      } catch (e) {
+        return json({ error: e instanceof Error ? e.message : 'Analytics error' }, 502);
+      }
+    }
+
+    if (path === '/admin/api/images' && method === 'POST') {
+      const form = await request.formData().catch(() => null);
+      const file = form?.get('file') as unknown as File | string | null | undefined;
+      if (!file || typeof file === 'string') return json({ error: 'No file uploaded' }, 400);
+      if (file.size > MAX_IMAGE_BYTES) return json({ error: 'Image too large (max 5 MB)' }, 413);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const ext   = sniffImage(bytes);
+      if (!ext) return json({ error: 'Only PNG, JPEG, WebP, GIF or AVIF images are allowed' }, 415);
+      return json({ ok: true, url: await uploadImage(env, file.name, ext, bytes) }, 201);
     }
 
     return json({ error: 'Not found' }, 404);

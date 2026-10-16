@@ -6,13 +6,15 @@ export interface Props {
   description?: string;
   image?: string;
   type?: 'website' | 'article';
+  noindex?: boolean;
 }
 
 const {
   title,
-  description = 'Senior Technical Operations Engineer — Kubernetes, cloud infrastructure, observability, and delivery at scale.',
+  description = 'Srđan Milutinović — open to Product Owner roles. Senior Technical Operations Engineer with a background in Kubernetes, cloud infrastructure, and delivery at scale.',
   image = '/og.png',
   type = 'website',
+  noindex = false,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
@@ -28,6 +30,7 @@ const imageUrl  = new URL(image, Astro.site);
   <title>{title === 'Home' ? 'Srđan Milutinović — srdjan.cloud' : `${title} — srdjan.cloud`}</title>
   <meta name="description" content={description} />
   <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex" />}
 
   <!-- Open Graph -->
   <meta property="og:title" content={title} />

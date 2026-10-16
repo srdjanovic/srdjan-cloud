@@ -1,0 +1,43 @@
+---
+// Full-page preview for the /admin editor. The editor opens this page and
+// sends the draft over postMessage; nothing is stored or fetched here.
+import Layout from '../../layouts/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import PostArticle from '../../components/PostArticle.astro';
+---
+
+<Layout title="Preview" description="Post preview" noindex>
+  <div class="preview-banner">PREVIEW — not published · updates live as you type</div>
+  <Nav />
+  <PostArticle title="Waiting for the editor…" excerpt="" dateText="">
+    <p>Open this page with the <strong>Full preview</strong> button in the admin editor.</p>
+  </PostArticle>
+  <Footer />
+</Layout>
+
+<style>
+  .preview-banner {
+    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    z-index: 300; font-family: var(--font-mono); font-size: 0.75rem;
+    background: var(--accent); color: var(--bg);
+    padding: 0.35rem 0.9rem; border-radius: 20px; pointer-events: none;
+  }
+</style>
+
+<script>
+  const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
+
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || e.data?.type !== 'post-preview') return;
+    const p = e.data.post as { title: string; excerpt: string; dateText: string; html: string };
+    document.title = 'Preview: ' + (p.title || 'Untitled');
+    $('.post-title').textContent   = p.title || 'Untitled';
+    $('.post-excerpt').textContent = p.excerpt;
+    $('.post-date').textContent    = p.dateText;
+    // The editor sanitizes with DOMPurify before sending.
+    $('.post-body').innerHTML      = p.html;
+  });
+
+  window.opener?.postMessage({ type: 'post-preview-ready' }, location.origin);
+</script>

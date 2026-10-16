@@ -4,7 +4,7 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 ---
 
-<Layout title="Home" description="Srđan Milutinović — Infrastructure at scale. Delivery that ships. Everything in between.">
+<Layout title="Home" description="Srđan Milutinović — open to Product Owner roles. Cloud operations background: Kubernetes, compliance, and live products at scale.">
   <!-- Particle canvas sits behind everything -->
   <canvas id="particle-canvas" aria-hidden="true"></canvas>
 
@@ -20,6 +20,9 @@ import Footer from '../components/Footer.astro';
       <p class="hero__location">
         <span class="hero__dot"></span>Karlsruhe, Germany · IONOS Cloud
       </p>
+      <a href="/contact" class="hero__open">
+        <span class="hero__open-dot" aria-hidden="true"></span>Open to Product Owner roles
+      </a>
       <div class="hero__cta">
         <a href="/about" class="btn btn--primary">About me</a>
         <a href="/blog" class="btn">Read the blog</a>
@@ -99,6 +102,28 @@ import Footer from '../components/Footer.astro';
     opacity: 0;
   }
   .hero__cursor.visible { opacity: 1; }
+
+  .hero__open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    border: 1px solid rgba(57,255,20,0.35);
+    background: rgba(57,255,20,0.06);
+    padding: 0.4rem 0.95rem;
+    border-radius: 20px;
+    margin: -1.25rem 0 2.25rem;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .hero__open:hover { border-color: var(--green); background: rgba(57,255,20,0.1); opacity: 1; }
+  .hero__open-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
 
   .hero__location {
     font-family: var(--font-mono);
@@ -279,7 +304,7 @@ import Footer from '../components/Footer.astro';
     const cursor = document.querySelector('.hero__cursor') as HTMLElement;
     if (!el || !cursor) return;
 
-    const text = 'Infrastructure at scale. Delivery that ships. Everything in between.';
+    const text = 'Infrastructure at scale. Delivery that ships. Next: owning the product.';
     let i = 0;
     cursor.classList.add('visible');
 

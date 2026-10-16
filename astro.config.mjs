@@ -5,5 +5,5 @@ export default defineConfig({
   output: 'static',
   site: 'https://srdjan.cloud',
   compressHTML: true,
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: page => !page.includes('/preview/') })],
 });

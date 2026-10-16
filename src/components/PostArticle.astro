@@ -1,0 +1,107 @@
+---
+// Shared by the real post page and the admin's full-page preview, so the
+// preview is pixel-identical to what gets published.
+export interface Props {
+  title:    string;
+  excerpt:  string;
+  date?:    Date;
+  dateText: string;
+}
+const { title, excerpt, date, dateText } = Astro.props;
+---
+
+<main class="post-main">
+  <div class="container">
+    <article>
+      <a href="/blog/" class="back-link">← All posts</a>
+      <header class="post-header">
+        <time class="post-date" datetime={date?.toISOString().slice(0, 10)}>{dateText}</time>
+        <h1 class="post-title">{title}</h1>
+        <p class="post-excerpt">{excerpt}</p>
+      </header>
+      <div class="post-body prose">
+        <slot />
+      </div>
+    </article>
+  </div>
+</main>
+
+<style>
+  .post-main { padding-top: var(--nav-h); padding-bottom: 5rem; }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 2rem 0 2.5rem;
+    transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--accent); opacity: 1; }
+
+  .post-header {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.5rem;
+  }
+  .post-date {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+  .post-title {
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .post-excerpt {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  .post-body {
+    max-width: 68ch;
+  }
+  .post-body :global(h1),
+  .post-body :global(h2),
+  .post-body :global(h3) {
+    font-family: var(--font-mono);
+    margin: 2.5rem 0 1rem;
+    color: var(--accent);
+  }
+  .post-body :global(h1) { font-size: 1.6rem; }
+  .post-body :global(h2) { font-size: 1.3rem; }
+  .post-body :global(h3) { font-size: 1.05rem; color: var(--text); }
+  .post-body :global(p)  { margin-bottom: 1.25rem; }
+  .post-body :global(ul),
+  .post-body :global(ol) { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+  .post-body :global(li) { margin-bottom: 0.4rem; }
+  .post-body :global(blockquote) {
+    border-left: 3px solid var(--accent);
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    color: var(--muted);
+    margin: 1.5rem 0;
+    font-style: italic;
+  }
+  .post-body :global(pre) {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin-bottom: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+  }
+  .post-body :global(code) { font-family: var(--font-mono); }
+  .post-body :global(hr) {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+</style>

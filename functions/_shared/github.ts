@@ -32,10 +32,16 @@ async function gh(env: Env, path: string, init: RequestInit = {}): Promise<Respo
 
 // ── Base64 <-> UTF-8 ───────────────────────────────────────────
 
-function toB64(text: string): string {
+function bytesToB64(bytes: Uint8Array): string {
   let bin = '';
-  for (const b of new TextEncoder().encode(text)) bin += String.fromCharCode(b);
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
   return btoa(bin);
+}
+
+function toB64(text: string): string {
+  return bytesToB64(new TextEncoder().encode(text));
 }
 
 function fromB64(b64: string): string {
@@ -173,4 +179,22 @@ export async function removePost(env: Env, slug: string): Promise<boolean> {
   if (!f) return false;
   await deleteFile(env, slug, f.sha, `blog: delete ${slug}`);
   return true;
+}
+
+// ── Images ─────────────────────────────────────────────────────
+// Stored under public/blog/images/<yyyy-mm>/ and served at /blog/images/...
+
+const IMAGE_DIR = 'public/blog/images';
+
+export async function uploadImage(env: Env, filename: string, ext: string, bytes: Uint8Array): Promise<string> {
+  const month = new Date().toISOString().slice(0, 7);
+  const base  = filename.replace(/\.[^.]*$/, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'image';
+  const name  = `${base}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const path  = `${IMAGE_DIR}/${month}/${name}`;
+  await gh(env, `/repos/${env.GITHUB_REPO}/contents/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify({ message: `blog: upload image ${name}`, content: bytesToB64(bytes), branch: branch(env) }),
+  });
+  return `/blog/images/${month}/${name}`;
 }
