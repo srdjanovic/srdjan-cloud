@@ -599,8 +599,9 @@ async function loadAnalytics(){
   var el = $('an-body');
   el.innerHTML = '<p class="empty">Loading…</p>';
   var r = await api('/admin/api/analytics?days='+anDays);
-  var d = await r.json().catch(function(){ return {}; });
-  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status)); return; }
+  var raw = await r.text(), d = {};
+  try { d = JSON.parse(raw); } catch(e) {}
+  if(!r.ok){ el.innerHTML = errP(d.error || ('HTTP '+r.status+': '+raw.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,300))); return; }
 
   var t = d.totals || {}, p = d.perf || {};
   var okT = !t.error, okP = !p.error && p.p50ms!=null;
@@ -871,7 +872,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
       try {
         return json(await getAnalytics(env, [1, 7, 30].includes(d) ? d : 7));
       } catch (e) {
-        return json({ error: e instanceof Error ? e.message : 'Analytics error' }, 502);
+        const msg = e instanceof Error ? (e.message || e.name) : String(e);
+        console.error('analytics failed', e);
+        return json({ error: 'Analytics failed: ' + (msg || 'unknown error') }, 502);
       }
     }
 

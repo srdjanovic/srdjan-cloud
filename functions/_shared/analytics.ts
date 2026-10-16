@@ -16,7 +16,8 @@ async function accountId(env: Env): Promise<string> {
   });
   const body: any = await res.json().catch(() => ({}));
   if (!body.success || !body.result?.length) {
-    throw new Error('Could not determine the Cloudflare account — set CF_ACCOUNT_ID');
+    const why = body.errors?.map((e: any) => e.message).join('; ') || `HTTP ${res.status}`;
+    throw new Error(`Could not determine the Cloudflare account (${why}) — set CF_ACCOUNT_ID`);
   }
   return (cachedAccount = body.result[0].id as string);
 }
@@ -30,8 +31,13 @@ async function gql(env: Env, query: string, variables: Record<string, unknown>):
     },
     body: JSON.stringify({ query, variables }),
   });
-  const body: any = await res.json().catch(() => ({}));
-  if (body.errors?.length) throw new Error(body.errors.map((e: any) => e.message).join('; '));
+  const text = await res.text();
+  let body: any = {};
+  try { body = JSON.parse(text); } catch { /* not JSON */ }
+  if (body.errors?.length) {
+    throw new Error('GraphQL: ' + body.errors.map((e: any) => e.message || JSON.stringify(e)).join('; '));
+  }
+  if (!res.ok) throw new Error(`GraphQL HTTP ${res.status}: ${text.slice(0, 200)}`);
   const acct = body.data?.viewer?.accounts?.[0];
   if (!acct) throw new Error('Token has no analytics access to this account (HTTP ' + res.status + ')');
   return acct.g;
