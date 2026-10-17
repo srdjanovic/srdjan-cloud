@@ -325,7 +325,14 @@ async function api(url, opts){
   opts = opts || {};
   opts.credentials = 'same-origin';
   opts.headers = Object.assign({'X-Requested-With':'admin'}, opts.headers || {});
-  var r = await fetch(url, opts);
+  var r;
+  try { r = await fetch(url, opts); }
+  catch (e) {
+    // Usually an expired Cloudflare Access session: the request is redirected
+    // to the Access login page, which fetch can't follow cross-origin.
+    if (confirm('Your login session has expired or the connection dropped. Reload to sign in again?')) location.reload();
+    throw e;
+  }
   if (r.status === 401 && url !== '/admin/api/login' && url !== '/admin/api/check') {
     location.reload(); throw new Error('session expired');
   }
