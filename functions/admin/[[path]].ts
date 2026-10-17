@@ -45,7 +45,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 :root{
   --bg:#080D17;--surface:rgba(255,255,255,0.04);
   --border:rgba(0,212,255,0.15);--border-h:rgba(0,212,255,0.5);
-  --accent:#00D4FF;--green:#39FF14;--text:#E2E8F0;--muted:#64748B;
+  --accent:#00D4FF;--green:#39FF14;--text:#E2E8F0;--muted:#8494AA;
   --red:#FF4444;--radius:8px;
 }
 html{height:100%}

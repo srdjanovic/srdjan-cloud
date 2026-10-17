@@ -7,7 +7,7 @@
   --accent:       #00D4FF;
   --green:        #39FF14;
   --text:         #E2E8F0;
-  --muted:        #64748B;
+  --muted:        #8494AA; /* ≥4.5:1 on --bg and card surfaces (WCAG AA) */
   --nav-h:        64px;
 
   --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
@@ -67,6 +67,12 @@ a {
 }
 a:hover {
   opacity: 0.8;
+}
+/* Links inside running text need more than colour to stand out (WCAG 1.4.1) */
+p a, li a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 p {

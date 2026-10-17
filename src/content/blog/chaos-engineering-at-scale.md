@@ -9,7 +9,7 @@ The pitch for chaos engineering is always some version of: "break things on purp
 
 This is true. It also undersells how uncomfortable the "finding out" part actually is.
 
-### Why we started
+## Why we started
 
 Our DNS and CDN products at IONOS Cloud handle over 65,000 requests per day across redundant infrastructure. We had solid monitoring — VictoriaMetrics for metrics, Loki for logs, Grafana for dashboards. We had runbooks for known failure modes. We ran regular postmortems. By the usual measures, we were doing operations reasonably well.
 
@@ -17,7 +17,7 @@ But we kept finding things during real incidents that our runbooks didn't cover.
 
 The chaos programme was the attempt to find out.
 
-### The setup
+## The setup
 
 We use ChaosMesh, which is the most mature cloud-native chaos engineering tool. It runs as a Kubernetes operator and supports a range of fault injection types: pod failure, container kill, network partition, packet loss, latency injection, CPU and memory stress, DNS error injection, filesystem errors.
 
@@ -25,7 +25,7 @@ The programme ran on production-equivalent environments, not production itself. 
 
 Over 2023, we ran experiments across 100+ workloads.
 
-### What we found
+## What we found
 
 The findings sorted into three categories, in rough order of how much they changed the architecture:
 
@@ -35,7 +35,7 @@ The findings sorted into three categories, in rough order of how much they chang
 
 **Health checks were optimistic.** Liveness probes configured too aggressively caused restart loops under CPU stress that never occurred under normal load. Readiness probes configured too leniently allowed traffic to route to pods that weren't actually ready. Neither was visible in monitoring until a chaos experiment created the conditions that exposed them.
 
-### The uncomfortable part
+## The uncomfortable part
 
 None of these findings were dramatic. No cascading production outage, no data loss, nothing that makes a good conference talk war story. They were quiet gaps — the kind that only become loud when the combination of conditions is exactly wrong.
 
@@ -43,7 +43,7 @@ That's the uncomfortable part of chaos engineering. The failures you find aren't
 
 The 99.99% HA target for the covered workloads is now backed by empirical failure data. That's a different kind of confidence than "the architecture is correct, therefore it should work." Different and better, but the path there involves a lot of meetings that start with "so we found something."
 
-### What actually makes it work
+## What actually makes it work
 
 Chaos engineering programmes fail for predictable reasons: no organizational buy-in, experiments run in environments that don't resemble production, findings go unaddressed because there's no process to close them.
 

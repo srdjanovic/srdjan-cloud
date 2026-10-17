@@ -11,13 +11,13 @@ This isn't a criticism, exactly. The BSI (Bundesamt für Sicherheit in der Infor
 
 On paper is also, unfortunately, where most compliance frameworks live.
 
-### What C5 actually is
+## What C5 actually is
 
 BSI C5 is Germany's Cloud Computing Compliance Criteria Catalogue. If you operate cloud services in Germany — or for German public sector clients — C5 is the framework auditors use to assess whether your security controls are adequate. It covers the obvious (encryption, access control, incident response) and the less obvious (supply chain security, customer data residency, the independence of your audit function).
 
 At IONOS Cloud, I've owned C5 evidence for DNS, CDN, and Domains products since 2023. These products handle hundreds of thousands of requests per day, which means the evidence isn't theoretical. It's operational — which is both the point and the difficulty.
 
-### The gap between "having a policy" and "having evidence"
+## The gap between "having a policy" and "having evidence"
 
 The first thing a C5 audit reveals is not that your controls are bad. It's that your documentation of your controls is worse than you thought.
 
@@ -25,7 +25,7 @@ Most teams that take cloud security seriously have reasonable practices: access 
 
 Producing that evidence retroactively is possible, but it's miserable. The right approach is to instrument your processes for auditability *before* the audit, which requires knowing in advance exactly what evidence each criterion requires. This is, predictably, not obvious until you've done it once.
 
-### The domains that generate the most operational work
+## The domains that generate the most operational work
 
 C5 has 17 control domains. For a cloud infrastructure team, the ones that create the most day-to-day friction are:
 
@@ -36,7 +36,7 @@ C5 has 17 control domains. For a cloud infrastructure team, the ones that create
 
 Each domain requires not just policies but *evidence*: logs, audit trails, test results, configuration exports. The gap between having a policy and having auditable evidence is where most teams discover gaps they didn't know existed.
 
-### Where it actually gets interesting
+## Where it actually gets interesting
 
 C5 is most useful not as a compliance exercise but as a structural forcing function. When you work through the criteria and try to produce evidence for "all privileged access is granted on a need-to-have basis and regularly reviewed," you discover quickly which systems have grown organically in ways that don't match the principle of least privilege.
 
@@ -48,7 +48,7 @@ A few specific examples from the IONOS work:
 
 **Incident documentation**: C5 requires documented incident response procedures and evidence that they're followed. The distinction between "we have a process" and "we have a documented, followed, evidenced process" turned out to be more productive than expected.
 
-### The underrated part
+## The underrated part
 
 C5 is designed as a technical framework, but its most valuable effects are organizational. The criteria force conversations about ownership, approval chains, and what "reviewed" actually means in practice — conversations that often haven't happened explicitly, even on teams that think they've had them.
 
